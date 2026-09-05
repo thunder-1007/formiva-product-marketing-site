@@ -109,4 +109,19 @@ main { overflow: hidden; }.section-pad { padding: 128px 0; }.container-wide { wi
 .pricing-footnote { margin: 28px 0 0; color: #737b70; font-size: 11px; text-align: center; }
 @media (max-width: 900px) { .pricing-grid { grid-template-columns: 1fr; } }
 
+@keyframes route-enter { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes auth-panel-in { from { opacity: 0; transform: translateY(18px) scale(.99); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes auth-success-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.route-transition { animation: route-enter .42s var(--ease-out) both; }
+.auth-art { animation: auth-panel-in .55s var(--ease-out) both; }
+.auth-form-wrap { animation: auth-panel-in .55s .08s var(--ease-out) both; }
+.auth-form form > label { transition: transform .22s var(--ease-out), color .22s ease; }
+.auth-form form > label:focus-within { transform: translateX(3px); color: #6d43e9; }
+.auth-form input { transition: border-color .22s ease, box-shadow .22s ease, background .22s ease, transform .22s var(--ease-out); }
+.auth-form input:focus { transform: translateY(-1px); }
+.social-button { transition: transform .22s var(--ease-out), border-color .22s ease, box-shadow .22s ease, background .22s ease; }
+.social-button:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(16,17,15,.08); }
+.auth-switch a, .auth-back { transition: color .2s ease, transform .2s var(--ease-out); }
+.auth-switch a:hover { transform: translateX(2px); }
+.auth-success { animation: auth-success-in .38s var(--ease-out) both; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; } }

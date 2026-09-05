@@ -1,0 +1,39 @@
+.split-heading p,
+.section-heading p,
+.ai-copy p,
+.final-cta-side p,
+.inner-copy p,
+.legal-lead,
+.legal-body p {
+  font-size: 16px;
+  color: #59645a;
+}
+
+.problem-card p,
+.platform-card p,
+.solution-copy span,
+.pricing-desc,
+.pricing-features li,
+.footer-brand p {
+  font-size: 14px;
+}
+
+.problem-card p,
+.platform-card p,
+.solution-copy span,
+.pricing-desc,
+.footer-brand p {
+  color: #626d62;
+}
+
+.platform-section .section-heading p,
+.final-cta-side p,
+.inner-copy p,
+.pricing-desc {
+  color: #a0aaa0;
+}
+
+.footer-brand p {
+  color: #9aa49a;
+}
+

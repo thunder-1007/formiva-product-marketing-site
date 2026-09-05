@@ -23,4 +23,13 @@ describe("project integrity", () => {
 
     expect(handoff).not.toMatch(new RegExp(traceTerms.join("|"), "i"));
   });
+
+  it("provides reduced-motion-safe route and authentication transitions", () => {
+    const app = readFileSync(resolve(projectRoot, "client/src/App.tsx"), "utf8");
+    const stylesheet = readFileSync(resolve(projectRoot, "client/src/index.css"), "utf8");
+
+    expect(app).toContain('className="route-transition"');
+    expect(stylesheet).toContain("@keyframes route-enter");
+    expect(stylesheet).toContain("@keyframes auth-panel-in");
+  });
 });
