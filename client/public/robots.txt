@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /login
+Disallow: /signup
+
+Sitemap: https://formiva-marketing-site.vercel.app/sitemap.xml
