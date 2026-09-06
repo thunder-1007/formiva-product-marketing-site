@@ -1,17 +1,32 @@
+/* ============================================================
+   INJI AI — FORMIVA
+   Complete UI stylesheet
+   ============================================================ */
+
 .inji-chat {
   position: fixed;
   right: 28px;
   bottom: 94px;
   z-index: 60;
+
+  display: flex;
+  flex-direction: column;
+
   box-sizing: border-box;
   width: min(388px, calc(100vw - 32px));
+  max-height: min(720px, calc(100vh - 120px));
+
   overflow: hidden;
+
   border: 1px solid rgba(16, 17, 15, 0.18);
   border-radius: 16px;
+
   background: var(--paper);
+
   box-shadow:
     0 26px 80px rgba(16, 17, 15, 0.24),
     0 4px 14px rgba(16, 17, 15, 0.08);
+
   animation: inji-open 0.24s var(--ease-out) both;
 }
 
@@ -35,27 +50,45 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+
+  flex: 0 0 auto;
+
   padding: 17px 18px;
+
   color: var(--paper);
-  background: linear-gradient(135deg, #10110f 0%, #1d211b 100%);
+
+  background: linear-gradient(
+    135deg,
+    #10110f 0%,
+    #1d211b 100%
+  );
 }
 
 .inji-title {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
 }
 
 .inji-avatar {
   position: relative;
+
   display: grid;
   place-items: center;
+
+  flex: 0 0 38px;
+
   width: 38px;
   height: 38px;
+
   color: var(--ink);
+
   border: 1px solid rgba(215, 255, 80, 0.55);
   border-radius: 11px;
+
   background: var(--lime);
+
   box-shadow:
     0 0 0 4px rgba(215, 255, 80, 0.08),
     0 8px 18px rgba(0, 0, 0, 0.18);
@@ -63,15 +96,19 @@
 
 .inji-avatar-spark {
   position: absolute;
+
   top: -5px;
   right: -4px;
-  display: grid;
-  place-items: center;
+
   width: 15px;
   height: 15px;
+
   padding: 2px;
+
   color: var(--ink);
+
   border-radius: 50%;
+
   background: var(--paper);
 }
 
@@ -87,20 +124,29 @@
 
 .inji-title span {
   margin-top: 2px;
+
   color: #bdc5bb;
+
   font-size: 12px;
 }
 
 .inji-close {
   display: grid;
   place-items: center;
+
   width: 32px;
   height: 32px;
+
   padding: 5px;
+
   border: 0;
   border-radius: 7px;
+
   color: inherit;
   background: transparent;
+
+  cursor: pointer;
+
   transition:
     color 0.2s ease,
     background 0.2s ease;
@@ -112,38 +158,60 @@
 }
 
 /* ============================================================
-   MESSAGES
+   MESSAGE AREA
    ============================================================ */
 
 .inji-messages {
   display: flex;
   flex-direction: column;
   gap: 12px;
+
+  flex: 1 1 auto;
+
+  min-height: 0;
   max-height: 350px;
+
   overflow-y: auto;
+
   padding: 20px 18px 16px;
+
   background: #e9ebe3;
+
+  scrollbar-width: thin;
 }
 
 .inji-message {
   max-width: 90%;
+
   padding: 11px 13px;
+
   border-radius: 11px;
+
   font-size: 14px;
   line-height: 1.55;
+
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .inji-bot {
   align-self: flex-start;
+
   color: #4d594e;
+
   border: 1px solid rgba(16, 17, 15, 0.12);
+
   background: var(--paper);
-  box-shadow: 0 3px 10px rgba(16, 17, 15, 0.04);
+
+  box-shadow:
+    0 3px 10px rgba(16, 17, 15, 0.04);
 }
 
 .inji-user {
   align-self: flex-end;
+
   color: var(--ink);
+
   background: var(--lime);
 }
 
@@ -153,32 +221,42 @@
 
 .inji-welcome {
   position: relative;
+
   padding-left: 15px;
 }
 
 .inji-welcome::before {
   content: '';
+
   position: absolute;
+
   top: 13px;
   bottom: 13px;
   left: 0;
+
   width: 3px;
+
   border-radius: 4px;
+
   background: var(--lime);
 }
 
 /* ============================================================
-   ACTIONS
+   ACTION LINKS
    ============================================================ */
 
 .inji-action {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+
   margin-top: 11px;
   padding-top: 9px;
+
   border-top: 1px solid rgba(16, 17, 15, 0.11);
+
   color: #6844e5;
+
   font-size: 11px;
   font-weight: 800;
 }
@@ -197,26 +275,17 @@
 
 .inji-action-button {
   border: 0;
+
   cursor: pointer;
+
   font: inherit;
+
   text-align: left;
 }
 
 .inji-action-button:disabled {
   cursor: wait;
   opacity: 0.55;
-}
-
-/* ============================================================
-   HANDOFF STATUS
-   ============================================================ */
-
-.inji-handoff-status {
-  align-self: center;
-  color: #6b756a;
-  font: 9px 'DM Mono', monospace;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 /* ============================================================
@@ -227,27 +296,41 @@
   display: flex;
   flex-wrap: wrap;
   gap: 7px;
+
   padding-top: 1px;
 }
 
 .inji-suggestions span {
   width: 100%;
+
   margin: 1px 0 2px;
+
   color: #6b756a;
+
   font: 9px 'DM Mono', monospace;
+
   letter-spacing: 0.1em;
+
   text-transform: uppercase;
 }
 
 .inji-suggestions button {
   padding: 8px 10px;
+
   border: 1px solid rgba(16, 17, 15, 0.15);
   border-radius: 999px;
+
   color: #4d594e;
+
   background: rgba(255, 255, 255, 0.58);
+
   font-size: 11px;
   line-height: 1.25;
+
   text-align: left;
+
+  cursor: pointer;
+
   transition:
     color 0.2s ease,
     border-color 0.2s ease,
@@ -257,216 +340,500 @@
 
 .inji-suggestions button:hover {
   border-color: rgba(16, 17, 15, 0.35);
+
   color: var(--ink);
+
   background: var(--paper);
+
   transform: translateY(-1px);
 }
 
 /* ============================================================
-   INPUT
+   HANDOFF STATUS
    ============================================================ */
 
-.inji-input {
-  display: flex;
-  gap: 9px;
-  padding: 14px;
-  border-top: 1px solid rgba(16, 17, 15, 0.1);
-  background: #f7f8f3;
-}
+.inji-handoff-status {
+  align-self: center;
 
-.inji-input input {
-  min-width: 0;
-  flex: 1;
-  padding: 11px 12px;
-  border: 1px solid rgba(16, 17, 15, 0.16);
-  border-radius: 7px;
-  color: var(--ink);
-  background: #fff;
-  font-size: 14px;
-  outline: none;
-}
+  width: 100%;
 
-.inji-input input:focus {
-  border-color: #6d43e9;
-  box-shadow: 0 0 0 3px rgba(109, 67, 233, 0.12);
-}
+  box-sizing: border-box;
 
-.inji-input button {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  flex: 0 0 42px;
-  border: 0;
-  border-radius: 7px;
-  color: var(--ink);
-  background: var(--lime);
-  transition:
-    transform 0.2s var(--ease-out),
-    background 0.2s ease;
-}
+  padding: 8px 4px;
 
-.inji-input button:hover {
-  background: #e0ff75;
-  transform: translateY(-1px);
-}
+  color: #6b756a;
 
-/* ============================================================
-   DISABLED STATES
-   ============================================================ */
+  font: 9px/1.7 'DM Mono', monospace;
 
-.inji-button:disabled,
-.inji-input button:disabled,
-.inji-input input:disabled,
-.inji-suggestions button:disabled {
-  cursor: wait;
-  opacity: 0.65;
-}
+  letter-spacing: 0.08em;
 
-/* ============================================================
-   FLOATING BUTTON
-   ============================================================ */
+  text-align: center;
 
-.inji-button {
-  position: fixed;
-  right: 28px;
-  bottom: max(24px, env(safe-area-inset-bottom));
-  z-index: 61;
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  min-height: 50px;
-  padding: 0 17px;
-  border: 1px solid rgba(16, 17, 15, 0.2);
-  border-radius: 999px;
-  color: var(--ink);
-  background: var(--lime);
-  box-shadow:
-    0 16px 38px rgba(16, 17, 15, 0.2),
-    0 2px 8px rgba(16, 17, 15, 0.08);
-  font-size: 13px;
-  font-weight: 800;
-  transition:
-    transform 0.2s var(--ease-out),
-    background 0.2s ease;
-}
-
-.inji-button:hover {
-  background: #e0ff75;
-  transform: translateY(-3px);
-}
-
-.inji-button-open {
-  width: 48px;
-  justify-content: center;
-  padding: 0;
-}
-
-/* ============================================================
-   WELCOME TEASER
-   ============================================================ */
-
-.inji-welcome-teaser {
-  position: fixed;
-  right: 28px;
-  bottom: calc(max(24px, env(safe-area-inset-bottom)) + 64px);
-  z-index: 62;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: min(325px, calc(100vw - 32px));
-  padding: 12px 12px 12px 15px;
-  border: 1px solid rgba(16, 17, 15, 0.15);
-  border-radius: 12px;
-  background: var(--paper);
-  box-shadow:
-    0 18px 48px rgba(16, 17, 15, 0.18),
-    0 3px 12px rgba(16, 17, 15, 0.08);
-  animation: inji-teaser-in 0.35s var(--ease-out) both;
-}
-
-@keyframes inji-teaser-in {
-  from {
-    opacity: 0;
-    transform: translateY(8px) scale(0.98);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.inji-teaser-copy {
-  min-width: 0;
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 3px;
-  padding: 0;
-  border: 0;
-  color: #626d62;
-  background: transparent;
-  text-align: left;
-}
-
-.inji-teaser-copy span {
-  color: #6b43e9;
-  font: 9px 'DM Mono', monospace;
-  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
-.inji-teaser-copy strong {
-  color: var(--ink);
-  font: 600 13px/1.25 'Space Grotesk', sans-serif;
+.inji-handoff-status b {
+  display: inline-block;
+
+  margin-top: 5px;
+
+  color: #4d594e;
+
+  font-weight: 600;
 }
 
-.inji-teaser-action {
-  flex: 0 0 auto;
-  padding: 8px 10px;
-  border: 1px solid rgba(16, 17, 15, 0.14);
-  border-radius: 5px;
+/* ============================================================
+   LEAD FORM
+   ============================================================ */
+
+.inji-lead-form {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+
+  width: 100%;
+  box-sizing: border-box;
+
+  padding: 4px 0 2px;
+
   color: var(--ink);
-  background: var(--lime);
+}
+
+.inji-lead-form > strong {
+  display: block;
+
+  margin-bottom: -2px;
+
+  color: var(--ink);
+
+  font: 600 18px/1.3 'Space Grotesk', sans-serif;
+
+  letter-spacing: -0.025em;
+}
+
+.inji-lead-form > p {
+  margin: 0 0 2px;
+
+  color: #596359;
+
+  font-size: 13px;
+
+  line-height: 1.5;
+}
+
+.inji-lead-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+
+  color: #414a40;
+
   font-size: 11px;
+  font-weight: 700;
+}
+
+.inji-lead-form input {
+  width: 100%;
+  box-sizing: border-box;
+
+  min-height: 38px;
+
+  padding: 9px 10px;
+
+  border: 1px solid rgba(16, 17, 15, 0.17);
+  border-radius: 7px;
+
+  color: var(--ink);
+
+  background: #fff;
+
+  font: 400 13px/1.3 inherit;
+
+  outline: none;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.inji-lead-form input:focus {
+  border-color: #6d43e9;
+
+  box-shadow:
+    0 0 0 3px rgba(109, 67, 233, 0.12);
+}
+
+.inji-lead-form small {
+  display: block;
+
+  margin-top: 2px;
+
+  color: #737c72;
+
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.inji-lead-form > button {
+  width: 100%;
+
+  min-height: 42px;
+
+  margin-top: 3px;
+
+  padding: 10px 14px;
+
+  border: 1px solid rgba(16, 17, 15, 0.15);
+  border-radius: 7px;
+
+  color: var(--ink);
+
+  background: var(--lime);
+
+  font-size: 12px;
   font-weight: 800;
+
+  cursor: pointer;
+
   transition:
     transform 0.2s var(--ease-out),
     background 0.2s ease;
 }
 
-.inji-teaser-action:hover {
+.inji-lead-form > button:hover {
   background: #e0ff75;
+
   transform: translateY(-1px);
 }
 
-.inji-teaser-dismiss {
-  align-self: flex-start;
-  padding: 0 1px;
-  border: 0;
-  color: #7e877c;
-  background: transparent;
-  font-size: 18px;
-  line-height: 1;
-}
-
-.inji-teaser-dismiss:hover {
-  color: var(--ink);
+.inji-lead-form > button:active {
+  transform: translateY(0);
 }
 
 /* ============================================================
-   TYPING INDICATOR
+   FORM ERROR
+   ============================================================ */
+
+.inji-form-error {
+  margin: 0 !important;
+
+  padding: 8px 10px;
+
+  border: 1px solid rgba(170, 55, 55, 0.18);
+  border-radius: 6px;
+
+  color: #9a3d3d !important;
+
+  background: rgba(170, 55, 55, 0.06);
+
+  font-size: 11px !important;
+  line-height: 1.4 !important;
+}
+
+/* ============================================================
+   HUMAN CHAT CONTROLS
+   ============================================================ */
+
+.inji-human-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  width: 100%;
+  box-sizing: border-box;
+
+  padding: 8px 10px;
+
+  border: 1px solid rgba(16, 17, 15, 0.1);
+  border-radius: 8px;
+
+  color: #566056;
+
+  background: rgba(255, 255, 255, 0.55);
+
+  font: 9px 'DM Mono', monospace;
+
+  letter-spacing: 0.04em;
+
+  text-transform: uppercase;
+}
+
+.inji-human-controls span {
+  min-width: 0;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+}
+
+.inji-human-controls button {
+  flex: 0 0 auto;
+
+  padding: 6px 9px;
+
+  border: 1px solid rgba(16, 17, 15, 0.15);
+  border-radius: 5px;
+
+  color: #4d594e;
+
+  background: var(--paper);
+
+  font-size: 10px;
+  font-weight: 800;
+
+  cursor: pointer;
+
+  transition:
+    color 0.2s ease,
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.inji-human-controls button:hover {
+  color: var(--ink);
+
+  background: var(--lime);
+
+  transform: translateY(-1px);
+}
+
+.inji-human-controls button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+/* ============================================================
+   HUMAN TYPING INDICATOR
+   ============================================================ */
+
+.inji-agent-typing {
+  align-self: flex-start;
+
+  display: inline-flex;
+  align-items: center;
+
+  width: fit-content;
+
+  padding: 7px 10px;
+
+  border: 1px solid rgba(16, 17, 15, 0.1);
+  border-radius: 8px;
+
+  color: #6b756a;
+
+  background: var(--paper);
+
+  font: 9px 'DM Mono', monospace;
+
+  letter-spacing: 0.04em;
+
+  text-transform: uppercase;
+}
+
+/* ============================================================
+   FEEDBACK
+   ============================================================ */
+
+.inji-feedback-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  width: 100%;
+  box-sizing: border-box;
+
+  padding: 4px 0;
+}
+
+.inji-feedback-form > strong {
+  color: var(--ink);
+
+  font: 600 17px/1.3 'Space Grotesk', sans-serif;
+
+  letter-spacing: -0.02em;
+}
+
+.inji-feedback-form > p {
+  margin: 0;
+
+  color: #596359;
+
+  font-size: 13px;
+
+  line-height: 1.5;
+}
+
+.inji-rating {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 6px;
+
+  padding: 6px 0;
+}
+
+.inji-rating button {
+  display: grid;
+  place-items: center;
+
+  width: 42px;
+  height: 42px;
+
+  padding: 0;
+
+  border: 1px solid rgba(16, 17, 15, 0.12);
+  border-radius: 10px;
+
+  background: rgba(255, 255, 255, 0.62);
+
+  font-size: 20px;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.2s var(--ease-out),
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.inji-rating button:hover {
+  transform: translateY(-2px);
+
+  border-color: rgba(16, 17, 15, 0.3);
+
+  background: var(--paper);
+}
+
+.inji-rating button.active {
+  border-color: #6d43e9;
+
+  background: rgba(109, 67, 233, 0.1);
+
+  box-shadow:
+    0 0 0 3px rgba(109, 67, 233, 0.08);
+}
+
+.inji-feedback-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+
+  color: #596359;
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.inji-feedback-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+
+  min-height: 76px;
+
+  resize: vertical;
+
+  padding: 9px 10px;
+
+  border: 1px solid rgba(16, 17, 15, 0.16);
+  border-radius: 7px;
+
+  color: var(--ink);
+
+  background: #fff;
+
+  font: inherit;
+  font-size: 12px;
+
+  outline: none;
+}
+
+.inji-feedback-form textarea:focus {
+  border-color: #6d43e9;
+
+  box-shadow:
+    0 0 0 3px rgba(109, 67, 233, 0.12);
+}
+
+.inji-feedback-form > button:not(.inji-text-button) {
+  width: 100%;
+
+  min-height: 40px;
+
+  padding: 9px 12px;
+
+  border: 1px solid rgba(16, 17, 15, 0.15);
+  border-radius: 7px;
+
+  color: var(--ink);
+
+  background: var(--lime);
+
+  font-size: 12px;
+  font-weight: 800;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.2s var(--ease-out),
+    background 0.2s ease;
+}
+
+.inji-feedback-form > button:not(.inji-text-button):hover {
+  background: #e0ff75;
+
+  transform: translateY(-1px);
+}
+
+.inji-feedback-form > button:not(.inji-text-button):disabled {
+  cursor: wait;
+
+  opacity: 0.55;
+
+  transform: none;
+}
+
+.inji-text-button {
+  align-self: center;
+
+  border: 0;
+
+  padding: 4px 8px;
+
+  color: #6d43e9;
+
+  background: transparent;
+
+  font-size: 10px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.inji-text-button:hover {
+  text-decoration: underline;
+}
+
+/* ============================================================
+   INJI THINKING / TYPING
    ============================================================ */
 
 .inji-typing {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+
   min-width: 72px;
+
   color: #6b756a;
+
   font: 10px 'DM Mono', monospace;
+
   letter-spacing: 0.04em;
+
   text-transform: uppercase;
 }
 
@@ -478,10 +845,14 @@
 
 .inji-typing-dots i {
   display: block;
+
   width: 4px;
   height: 4px;
+
   border-radius: 50%;
+
   background: #6d43e9;
+
   animation: inji-dot 1s ease-in-out infinite;
 }
 
@@ -498,13 +869,311 @@
   60%,
   100% {
     opacity: 0.35;
+
     transform: translateY(0);
   }
 
   30% {
     opacity: 1;
+
     transform: translateY(-2px);
   }
+}
+
+/* ============================================================
+   INPUT
+   ============================================================ */
+
+.inji-input {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+
+  flex: 0 0 auto;
+
+  padding: 14px;
+
+  border-top: 1px solid rgba(16, 17, 15, 0.1);
+
+  background: #f7f8f3;
+}
+
+.inji-input input {
+  min-width: 0;
+
+  flex: 1;
+
+  height: 42px;
+
+  box-sizing: border-box;
+
+  padding: 11px 12px;
+
+  border: 1px solid rgba(16, 17, 15, 0.16);
+  border-radius: 7px;
+
+  color: var(--ink);
+
+  background: #fff;
+
+  font-size: 14px;
+
+  outline: none;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.inji-input input:focus {
+  border-color: #6d43e9;
+
+  box-shadow:
+    0 0 0 3px rgba(109, 67, 233, 0.12);
+}
+
+.inji-input input::placeholder {
+  color: #adb3ac;
+}
+
+.inji-input button {
+  display: grid;
+  place-items: center;
+
+  width: 42px;
+  height: 42px;
+
+  flex: 0 0 42px;
+
+  border: 0;
+  border-radius: 7px;
+
+  color: var(--ink);
+
+  background: var(--lime);
+
+  cursor: pointer;
+
+  transition:
+    transform 0.2s var(--ease-out),
+    background 0.2s ease;
+}
+
+.inji-input button:hover {
+  background: #e0ff75;
+
+  transform: translateY(-1px);
+}
+
+/* ============================================================
+   FLOATING LAUNCHER
+   ============================================================ */
+
+.inji-button {
+  position: fixed;
+
+  right: 28px;
+  bottom: max(24px, env(safe-area-inset-bottom));
+
+  z-index: 61;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 9px;
+
+  min-height: 50px;
+
+  padding: 0 17px;
+
+  border: 1px solid rgba(16, 17, 15, 0.2);
+  border-radius: 999px;
+
+  color: var(--ink);
+
+  background: var(--lime);
+
+  box-shadow:
+    0 16px 38px rgba(16, 17, 15, 0.2),
+    0 2px 8px rgba(16, 17, 15, 0.08);
+
+  font-size: 13px;
+  font-weight: 800;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.2s var(--ease-out),
+    background 0.2s ease;
+}
+
+.inji-button:hover {
+  background: #e0ff75;
+
+  transform: translateY(-3px);
+}
+
+.inji-button-open {
+  width: 48px;
+
+  padding: 0;
+}
+
+/* ============================================================
+   WELCOME TEASER
+   ============================================================ */
+
+.inji-welcome-teaser {
+  position: fixed;
+
+  right: 28px;
+
+  bottom: calc(
+    max(24px, env(safe-area-inset-bottom)) + 64px
+  );
+
+  z-index: 62;
+
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  width: min(325px, calc(100vw - 32px));
+
+  box-sizing: border-box;
+
+  padding: 12px 12px 12px 15px;
+
+  border: 1px solid rgba(16, 17, 15, 0.15);
+  border-radius: 12px;
+
+  background: var(--paper);
+
+  box-shadow:
+    0 18px 48px rgba(16, 17, 15, 0.18),
+    0 3px 12px rgba(16, 17, 15, 0.08);
+
+  animation: inji-teaser-in 0.35s var(--ease-out) both;
+}
+
+@keyframes inji-teaser-in {
+  from {
+    opacity: 0;
+
+    transform: translateY(8px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+
+    transform: translateY(0) scale(1);
+  }
+}
+
+.inji-teaser-copy {
+  min-width: 0;
+
+  display: flex;
+  flex: 1;
+
+  flex-direction: column;
+  align-items: flex-start;
+
+  gap: 3px;
+
+  padding: 0;
+
+  border: 0;
+
+  color: #626d62;
+
+  background: transparent;
+
+  text-align: left;
+
+  cursor: pointer;
+}
+
+.inji-teaser-copy span {
+  color: #6b43e9;
+
+  font: 9px 'DM Mono', monospace;
+
+  letter-spacing: 0.06em;
+
+  text-transform: uppercase;
+}
+
+.inji-teaser-copy strong {
+  color: var(--ink);
+
+  font: 600 13px/1.25 'Space Grotesk', sans-serif;
+}
+
+.inji-teaser-action {
+  flex: 0 0 auto;
+
+  padding: 8px 10px;
+
+  border: 1px solid rgba(16, 17, 15, 0.14);
+  border-radius: 5px;
+
+  color: var(--ink);
+
+  background: var(--lime);
+
+  font-size: 11px;
+  font-weight: 800;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.2s var(--ease-out),
+    background 0.2s ease;
+}
+
+.inji-teaser-action:hover {
+  background: #e0ff75;
+
+  transform: translateY(-1px);
+}
+
+.inji-teaser-dismiss {
+  align-self: flex-start;
+
+  padding: 0 1px;
+
+  border: 0;
+
+  color: #7e877c;
+
+  background: transparent;
+
+  font-size: 18px;
+
+  line-height: 1;
+
+  cursor: pointer;
+}
+
+.inji-teaser-dismiss:hover {
+  color: var(--ink);
+}
+
+/* ============================================================
+   DISABLED STATES
+   ============================================================ */
+
+.inji-button:disabled,
+.inji-input button:disabled,
+.inji-input input:disabled,
+.inji-suggestions button:disabled,
+.inji-lead-form button:disabled {
+  cursor: wait;
+
+  opacity: 0.65;
 }
 
 /* ============================================================
@@ -515,24 +1184,90 @@
   .inji-chat {
     right: 12px;
     left: 12px;
-    bottom: calc(78px + env(safe-area-inset-bottom));
+
+    bottom: calc(
+      78px + env(safe-area-inset-bottom)
+    );
+
     width: auto;
+
     max-width: none;
+
+    max-height: calc(
+      100vh - 96px - env(safe-area-inset-bottom)
+    );
+
     border-radius: 14px;
+  }
+
+  .inji-header {
+    padding: 15px 16px;
+  }
+
+  .inji-avatar {
+    width: 35px;
+    height: 35px;
+
+    flex-basis: 35px;
+  }
+
+  .inji-title strong {
+    font-size: 16px;
+  }
+
+  .inji-title span {
+    font-size: 11px;
   }
 
   .inji-messages {
     max-height: min(52vh, 350px);
+
+    padding: 17px 14px 14px;
+  }
+
+  .inji-message {
+    max-width: 92%;
+
+    font-size: 13px;
+  }
+
+  .inji-lead-form > strong {
+    font-size: 17px;
+  }
+
+  .inji-human-controls {
+    font-size: 8px;
+  }
+
+  .inji-rating button {
+    width: 40px;
+    height: 40px;
+  }
+
+  .inji-input {
+    padding: 11px;
+  }
+
+  .inji-input input {
+    height: 42px;
   }
 
   .inji-button {
     right: 16px;
-    bottom: max(16px, env(safe-area-inset-bottom));
+
+    bottom: max(
+      16px,
+      env(safe-area-inset-bottom)
+    );
   }
 
   .inji-welcome-teaser {
     right: 12px;
-    bottom: calc(70px + env(safe-area-inset-bottom));
+
+    bottom: calc(
+      70px + env(safe-area-inset-bottom)
+    );
+
     width: calc(100vw - 24px);
   }
 }
@@ -546,5 +1281,12 @@
   .inji-welcome-teaser,
   .inji-typing-dots i {
     animation: none;
+  }
+
+  .inji-button,
+  .inji-input button,
+  .inji-suggestions button,
+  .inji-rating button {
+    transition: none;
   }
 }
