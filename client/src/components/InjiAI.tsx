@@ -133,7 +133,7 @@ export default function InjiAI() {
     };
 
     void poll();
-    const interval = window.setInterval(() => void poll(), 2500);
+    const interval = window.setInterval(() => void poll(), 1000);
     return () => { cancelled = true; clearInterval(interval); };
   }, [open, status]);
 
