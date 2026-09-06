@@ -1,115 +1,45 @@
-/* ============================================================
-   INJI AI — FORMIVA
-   Complete UI stylesheet
-   ============================================================ */
-
 .inji-chat {
   position: fixed;
   right: 28px;
   bottom: 94px;
   z-index: 60;
-
-  display: flex;
-  flex-direction: column;
-
-  box-sizing: border-box;
-  width: min(388px, calc(100vw - 32px));
-  max-height: min(720px, calc(100vh - 120px));
-
+  width: min(360px, calc(100vw - 32px));
   overflow: hidden;
-
-  border: 1px solid rgba(16, 17, 15, 0.18);
-  border-radius: 16px;
-
+  border: 1px solid rgba(16,17,15,.14);
+  border-radius: 12px;
   background: var(--paper);
-
-  box-shadow:
-    0 26px 80px rgba(16, 17, 15, 0.24),
-    0 4px 14px rgba(16, 17, 15, 0.08);
-
-  animation: inji-open 0.24s var(--ease-out) both;
+  box-shadow: 0 24px 70px rgba(16,17,15,.2);
+  animation: inji-open .24s var(--ease-out) both;
 }
 
 @keyframes inji-open {
-  from {
-    opacity: 0;
-    transform: translateY(10px) scale(0.98);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  from { opacity: 0; transform: translateY(10px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
-
-/* ============================================================
-   HEADER
-   ============================================================ */
 
 .inji-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-
-  flex: 0 0 auto;
-
-  padding: 17px 18px;
-
+  padding: 15px 16px;
   color: var(--paper);
-
-  background: linear-gradient(
-    135deg,
-    #10110f 0%,
-    #1d211b 100%
-  );
+  background: var(--ink);
 }
 
 .inji-title {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-width: 0;
 }
 
 .inji-avatar {
-  position: relative;
-
+  width: 32px;
+  height: 32px;
   display: grid;
   place-items: center;
-
-  flex: 0 0 38px;
-
-  width: 38px;
-  height: 38px;
-
   color: var(--ink);
-
-  border: 1px solid rgba(215, 255, 80, 0.55);
-  border-radius: 11px;
-
+  border-radius: 8px;
   background: var(--lime);
-
-  box-shadow:
-    0 0 0 4px rgba(215, 255, 80, 0.08),
-    0 8px 18px rgba(0, 0, 0, 0.18);
-}
-
-.inji-avatar-spark {
-  position: absolute;
-
-  top: -5px;
-  right: -4px;
-
-  width: 15px;
-  height: 15px;
-
-  padding: 2px;
-
-  color: var(--ink);
-
-  border-radius: 50%;
-
-  background: var(--paper);
 }
 
 .inji-title strong,
@@ -118,151 +48,77 @@
 }
 
 .inji-title strong {
-  font: 600 17px 'Space Grotesk', sans-serif;
-  letter-spacing: -0.03em;
+  font: 600 15px 'Space Grotesk', sans-serif;
 }
 
 .inji-title span {
   margin-top: 2px;
+  color: #aab3a8;
+  font-size: 11px;
+}
 
-  color: #bdc5bb;
-
-  font-size: 12px;
+.inji-close,
+.inji-input button {
+  display: grid;
+  place-items: center;
+  border: 0;
+  color: inherit;
+  background: transparent;
 }
 
 .inji-close {
-  display: grid;
-  place-items: center;
-
-  width: 32px;
-  height: 32px;
-
   padding: 5px;
-
-  border: 0;
-  border-radius: 7px;
-
-  color: inherit;
-  background: transparent;
-
-  cursor: pointer;
-
-  transition:
-    color 0.2s ease,
-    background 0.2s ease;
 }
 
 .inji-close:hover {
   color: var(--lime);
-  background: rgba(255, 255, 255, 0.08);
 }
-
-/* ============================================================
-   MESSAGE AREA
-   ============================================================ */
 
 .inji-messages {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-
-  flex: 1 1 auto;
-
-  min-height: 0;
-  max-height: 350px;
-
+  gap: 10px;
+  max-height: 330px;
   overflow-y: auto;
-
-  padding: 20px 18px 16px;
-
-  background: #e9ebe3;
-
-  scrollbar-width: thin;
+  padding: 18px 16px;
+  background: #eef0e9;
 }
 
 .inji-message {
-  max-width: 90%;
-
-  padding: 11px 13px;
-
-  border-radius: 11px;
-
-  font-size: 14px;
+  max-width: 86%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
   line-height: 1.55;
-
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
 }
 
 .inji-bot {
   align-self: flex-start;
-
   color: #4d594e;
-
-  border: 1px solid rgba(16, 17, 15, 0.12);
-
   background: var(--paper);
-
-  box-shadow:
-    0 3px 10px rgba(16, 17, 15, 0.04);
+  border: 1px solid rgba(16,17,15,.09);
 }
 
 .inji-user {
   align-self: flex-end;
-
   color: var(--ink);
-
   background: var(--lime);
 }
-
-/* ============================================================
-   WELCOME MESSAGE
-   ============================================================ */
-
-.inji-welcome {
-  position: relative;
-
-  padding-left: 15px;
-}
-
-.inji-welcome::before {
-  content: '';
-
-  position: absolute;
-
-  top: 13px;
-  bottom: 13px;
-  left: 0;
-
-  width: 3px;
-
-  border-radius: 4px;
-
-  background: var(--lime);
-}
-
-/* ============================================================
-   ACTION LINKS
-   ============================================================ */
 
 .inji-action {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-
   margin-top: 11px;
   padding-top: 9px;
-
-  border-top: 1px solid rgba(16, 17, 15, 0.11);
-
+  border-top: 1px solid rgba(16,17,15,.11);
   color: #6844e5;
-
   font-size: 11px;
   font-weight: 800;
 }
 
 .inji-action svg {
-  transition: transform 0.2s var(--ease-out);
+  transition: transform .2s var(--ease-out);
 }
 
 .inji-action:hover {
@@ -275,565 +131,187 @@
 
 .inji-action-button {
   border: 0;
-
   cursor: pointer;
-
   font: inherit;
-
   text-align: left;
 }
 
 .inji-action-button:disabled {
   cursor: wait;
-  opacity: 0.55;
+  opacity: .55;
 }
-
-/* ============================================================
-   SUGGESTIONS
-   ============================================================ */
-
-.inji-suggestions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-
-  padding-top: 1px;
-}
-
-.inji-suggestions span {
-  width: 100%;
-
-  margin: 1px 0 2px;
-
-  color: #6b756a;
-
-  font: 9px 'DM Mono', monospace;
-
-  letter-spacing: 0.1em;
-
-  text-transform: uppercase;
-}
-
-.inji-suggestions button {
-  padding: 8px 10px;
-
-  border: 1px solid rgba(16, 17, 15, 0.15);
-  border-radius: 999px;
-
-  color: #4d594e;
-
-  background: rgba(255, 255, 255, 0.58);
-
-  font-size: 11px;
-  line-height: 1.25;
-
-  text-align: left;
-
-  cursor: pointer;
-
-  transition:
-    color 0.2s ease,
-    border-color 0.2s ease,
-    background 0.2s ease,
-    transform 0.2s var(--ease-out);
-}
-
-.inji-suggestions button:hover {
-  border-color: rgba(16, 17, 15, 0.35);
-
-  color: var(--ink);
-
-  background: var(--paper);
-
-  transform: translateY(-1px);
-}
-
-/* ============================================================
-   HANDOFF STATUS
-   ============================================================ */
 
 .inji-handoff-status {
   align-self: center;
-
-  width: 100%;
-
-  box-sizing: border-box;
-
-  padding: 8px 4px;
-
   color: #6b756a;
-
-  font: 9px/1.7 'DM Mono', monospace;
-
-  letter-spacing: 0.08em;
-
-  text-align: center;
-
-  text-transform: uppercase;
-}
-
-.inji-handoff-status b {
-  display: inline-block;
-
-  margin-top: 5px;
-
-  color: #4d594e;
-
-  font-weight: 600;
-}
-
-/* ============================================================
-   LEAD FORM
-   ============================================================ */
-
-.inji-lead-form {
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-
-  width: 100%;
-  box-sizing: border-box;
-
-  padding: 4px 0 2px;
-
-  color: var(--ink);
-}
-
-.inji-lead-form > strong {
-  display: block;
-
-  margin-bottom: -2px;
-
-  color: var(--ink);
-
-  font: 600 18px/1.3 'Space Grotesk', sans-serif;
-
-  letter-spacing: -0.025em;
-}
-
-.inji-lead-form > p {
-  margin: 0 0 2px;
-
-  color: #596359;
-
-  font-size: 13px;
-
-  line-height: 1.5;
-}
-
-.inji-lead-form label {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-
-  color: #414a40;
-
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.inji-lead-form input {
-  width: 100%;
-  box-sizing: border-box;
-
-  min-height: 38px;
-
-  padding: 9px 10px;
-
-  border: 1px solid rgba(16, 17, 15, 0.17);
-  border-radius: 7px;
-
-  color: var(--ink);
-
-  background: #fff;
-
-  font: 400 13px/1.3 inherit;
-
-  outline: none;
-
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.inji-lead-form input:focus {
-  border-color: #6d43e9;
-
-  box-shadow:
-    0 0 0 3px rgba(109, 67, 233, 0.12);
-}
-
-.inji-lead-form small {
-  display: block;
-
-  margin-top: 2px;
-
-  color: #737c72;
-
-  font-size: 10px;
-  line-height: 1.5;
-}
-
-.inji-lead-form > button {
-  width: 100%;
-
-  min-height: 42px;
-
-  margin-top: 3px;
-
-  padding: 10px 14px;
-
-  border: 1px solid rgba(16, 17, 15, 0.15);
-  border-radius: 7px;
-
-  color: var(--ink);
-
-  background: var(--lime);
-
-  font-size: 12px;
-  font-weight: 800;
-
-  cursor: pointer;
-
-  transition:
-    transform 0.2s var(--ease-out),
-    background 0.2s ease;
-}
-
-.inji-lead-form > button:hover {
-  background: #e0ff75;
-
-  transform: translateY(-1px);
-}
-
-.inji-lead-form > button:active {
-  transform: translateY(0);
-}
-
-/* ============================================================
-   FORM ERROR
-   ============================================================ */
-
-.inji-form-error {
-  margin: 0 !important;
-
-  padding: 8px 10px;
-
-  border: 1px solid rgba(170, 55, 55, 0.18);
-  border-radius: 6px;
-
-  color: #9a3d3d !important;
-
-  background: rgba(170, 55, 55, 0.06);
-
-  font-size: 11px !important;
-  line-height: 1.4 !important;
-}
-
-/* ============================================================
-   HUMAN CHAT CONTROLS
-   ============================================================ */
-
-.inji-human-controls {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-
-  width: 100%;
-  box-sizing: border-box;
-
-  padding: 8px 10px;
-
-  border: 1px solid rgba(16, 17, 15, 0.1);
-  border-radius: 8px;
-
-  color: #566056;
-
-  background: rgba(255, 255, 255, 0.55);
-
   font: 9px 'DM Mono', monospace;
-
-  letter-spacing: 0.04em;
-
+  letter-spacing: .08em;
   text-transform: uppercase;
 }
 
-.inji-human-controls span {
-  min-width: 0;
-
-  overflow: hidden;
-
-  text-overflow: ellipsis;
-
-  white-space: nowrap;
-}
-
-.inji-human-controls button {
-  flex: 0 0 auto;
-
-  padding: 6px 9px;
-
-  border: 1px solid rgba(16, 17, 15, 0.15);
-  border-radius: 5px;
-
-  color: #4d594e;
-
+.inji-input {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid rgba(16,17,15,.1);
   background: var(--paper);
-
-  font-size: 10px;
-  font-weight: 800;
-
-  cursor: pointer;
-
-  transition:
-    color 0.2s ease,
-    background 0.2s ease,
-    transform 0.2s ease;
 }
 
-.inji-human-controls button:hover {
+.inji-input input {
+  min-width: 0;
+  flex: 1;
+  padding: 10px 11px;
+  border: 1px solid rgba(16,17,15,.16);
+  border-radius: 5px;
   color: var(--ink);
+  background: #fff;
+  font-size: 13px;
+  outline: none;
+}
 
+.inji-input input:focus {
+  border-color: #6d43e9;
+  box-shadow: 0 0 0 3px rgba(109,67,233,.12);
+}
+
+.inji-input button {
+  width: 38px;
+  flex: 0 0 38px;
+  border-radius: 5px;
+  color: var(--ink);
   background: var(--lime);
-
-  transform: translateY(-1px);
 }
 
-.inji-human-controls button:disabled {
-  cursor: wait;
-  opacity: 0.6;
+.inji-input button:hover {
+  background: #e0ff75;
 }
 
-/* ============================================================
-   HUMAN TYPING INDICATOR
-   ============================================================ */
-
-.inji-agent-typing {
-  align-self: flex-start;
-
+.inji-button {
+  position: fixed;
+  right: 28px;
+  bottom: max(24px, env(safe-area-inset-bottom));
+  z-index: 61;
   display: inline-flex;
   align-items: center;
+  gap: 9px;
+  min-height: 48px;
+  padding: 0 16px;
+  border: 1px solid rgba(16,17,15,.14);
+  border-radius: 999px;
+  color: var(--ink);
+  background: var(--lime);
+  box-shadow: 0 14px 35px rgba(16,17,15,.18);
+  font-size: 12px;
+  font-weight: 800;
+  transition: transform .2s var(--ease-out), background .2s ease;
+}
 
-  width: fit-content;
+.inji-button:hover {
+  transform: translateY(-3px);
+  background: #e0ff75;
+}
 
-  padding: 7px 10px;
+.inji-button-open {
+  width: 48px;
+  justify-content: center;
+  padding: 0;
+}
 
-  border: 1px solid rgba(16, 17, 15, 0.1);
-  border-radius: 8px;
+.inji-button:disabled,
+.inji-input button:disabled,
+.inji-input input:disabled,
+.inji-suggestions button:disabled {
+  cursor: wait;
+  opacity: .65;
+}
 
-  color: #6b756a;
-
+.inji-welcome-teaser {
+  position: fixed;
+  right: 28px;
+  bottom: calc(max(24px, env(safe-area-inset-bottom)) + 64px);
+  z-index: 62;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(325px, calc(100vw - 32px));
+  padding: 12px 12px 12px 15px;
+  border: 1px solid rgba(16,17,15,.15);
+  border-radius: 12px;
   background: var(--paper);
+  box-shadow: 0 18px 48px rgba(16,17,15,.18), 0 3px 12px rgba(16,17,15,.08);
+  animation: inji-teaser-in .35s var(--ease-out) both;
+}
 
+@keyframes inji-teaser-in {
+  from { opacity: 0; transform: translateY(8px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.inji-teaser-copy {
+  min-width: 0;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  padding: 0;
+  border: 0;
+  color: #626d62;
+  background: transparent;
+  text-align: left;
+}
+
+.inji-teaser-copy span {
+  color: #6b43e9;
   font: 9px 'DM Mono', monospace;
-
-  letter-spacing: 0.04em;
-
+  letter-spacing: .06em;
   text-transform: uppercase;
 }
 
-/* ============================================================
-   FEEDBACK
-   ============================================================ */
-
-.inji-feedback-form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-
-  width: 100%;
-  box-sizing: border-box;
-
-  padding: 4px 0;
-}
-
-.inji-feedback-form > strong {
+.inji-teaser-copy strong {
   color: var(--ink);
-
-  font: 600 17px/1.3 'Space Grotesk', sans-serif;
-
-  letter-spacing: -0.02em;
+  font: 600 13px/1.25 'Space Grotesk', sans-serif;
 }
 
-.inji-feedback-form > p {
-  margin: 0;
-
-  color: #596359;
-
-  font-size: 13px;
-
-  line-height: 1.5;
-}
-
-.inji-rating {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  gap: 6px;
-
-  padding: 6px 0;
-}
-
-.inji-rating button {
-  display: grid;
-  place-items: center;
-
-  width: 42px;
-  height: 42px;
-
-  padding: 0;
-
-  border: 1px solid rgba(16, 17, 15, 0.12);
-  border-radius: 10px;
-
-  background: rgba(255, 255, 255, 0.62);
-
-  font-size: 20px;
-
-  cursor: pointer;
-
-  transition:
-    transform 0.2s var(--ease-out),
-    border-color 0.2s ease,
-    background 0.2s ease;
-}
-
-.inji-rating button:hover {
-  transform: translateY(-2px);
-
-  border-color: rgba(16, 17, 15, 0.3);
-
-  background: var(--paper);
-}
-
-.inji-rating button.active {
-  border-color: #6d43e9;
-
-  background: rgba(109, 67, 233, 0.1);
-
-  box-shadow:
-    0 0 0 3px rgba(109, 67, 233, 0.08);
-}
-
-.inji-feedback-form label {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-
-  color: #596359;
-
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.inji-feedback-form textarea {
-  width: 100%;
-  box-sizing: border-box;
-
-  min-height: 76px;
-
-  resize: vertical;
-
-  padding: 9px 10px;
-
-  border: 1px solid rgba(16, 17, 15, 0.16);
-  border-radius: 7px;
-
+.inji-teaser-action {
+  flex: 0 0 auto;
+  padding: 8px 10px;
+  border: 1px solid rgba(16,17,15,.14);
+  border-radius: 5px;
   color: var(--ink);
-
-  background: #fff;
-
-  font: inherit;
-  font-size: 12px;
-
-  outline: none;
-}
-
-.inji-feedback-form textarea:focus {
-  border-color: #6d43e9;
-
-  box-shadow:
-    0 0 0 3px rgba(109, 67, 233, 0.12);
-}
-
-.inji-feedback-form > button:not(.inji-text-button) {
-  width: 100%;
-
-  min-height: 40px;
-
-  padding: 9px 12px;
-
-  border: 1px solid rgba(16, 17, 15, 0.15);
-  border-radius: 7px;
-
-  color: var(--ink);
-
   background: var(--lime);
-
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
-
-  cursor: pointer;
-
-  transition:
-    transform 0.2s var(--ease-out),
-    background 0.2s ease;
+  transition: transform .2s var(--ease-out), background .2s ease;
 }
 
-.inji-feedback-form > button:not(.inji-text-button):hover {
-  background: #e0ff75;
-
+.inji-teaser-action:hover {
   transform: translateY(-1px);
+  background: #e0ff75;
 }
 
-.inji-feedback-form > button:not(.inji-text-button):disabled {
-  cursor: wait;
-
-  opacity: 0.55;
-
-  transform: none;
-}
-
-.inji-text-button {
-  align-self: center;
-
+.inji-teaser-dismiss {
+  align-self: flex-start;
+  padding: 0 1px;
   border: 0;
-
-  padding: 4px 8px;
-
-  color: #6d43e9;
-
+  color: #7e877c;
   background: transparent;
-
-  font-size: 10px;
-  font-weight: 700;
-
-  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
 }
 
-.inji-text-button:hover {
-  text-decoration: underline;
+.inji-teaser-dismiss:hover {
+  color: var(--ink);
 }
-
-/* ============================================================
-   INJI THINKING / TYPING
-   ============================================================ */
 
 .inji-typing {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-
   min-width: 72px;
-
   color: #6b756a;
-
   font: 10px 'DM Mono', monospace;
-
-  letter-spacing: 0.04em;
-
+  letter-spacing: .04em;
   text-transform: uppercase;
 }
 
@@ -844,449 +322,647 @@
 }
 
 .inji-typing-dots i {
-  display: block;
-
   width: 4px;
   height: 4px;
-
+  display: block;
   border-radius: 50%;
-
   background: #6d43e9;
-
   animation: inji-dot 1s ease-in-out infinite;
 }
 
-.inji-typing-dots i:nth-child(2) {
-  animation-delay: 0.14s;
-}
-
-.inji-typing-dots i:nth-child(3) {
-  animation-delay: 0.28s;
-}
+.inji-typing-dots i:nth-child(2) { animation-delay: .14s; }
+.inji-typing-dots i:nth-child(3) { animation-delay: .28s; }
 
 @keyframes inji-dot {
-  0%,
-  60%,
-  100% {
-    opacity: 0.35;
+  0%, 60%, 100% { opacity: .35; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-2px); }
+}
 
-    transform: translateY(0);
+@media (max-width: 620px) {
+  .inji-chat {
+    right: 16px;
+    bottom: calc(78px + env(safe-area-inset-bottom));
   }
 
-  30% {
-    opacity: 1;
+  .inji-button {
+    right: 16px;
+    bottom: max(16px, env(safe-area-inset-bottom));
+  }
 
-    transform: translateY(-2px);
+  .inji-welcome-teaser {
+    right: 12px;
+    bottom: calc(70px + env(safe-area-inset-bottom));
+    width: calc(100vw - 24px);
   }
 }
 
-/* ============================================================
-   INPUT
-   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .inji-chat,
+  .inji-welcome-teaser,
+  .inji-typing-dots i { animation: none; }
+}
+
+.inji-chat {
+  box-sizing: border-box;
+  width: min(388px, calc(100vw - 32px));
+  border-color: rgba(16,17,15,.18);
+  border-radius: 16px;
+  box-shadow: 0 26px 80px rgba(16,17,15,.24), 0 4px 14px rgba(16,17,15,.08);
+}
+
+.inji-header {
+  padding: 17px 18px;
+  background: linear-gradient(135deg, #10110f 0%, #1d211b 100%);
+}
+
+.inji-avatar {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(215,255,80,.55);
+  border-radius: 11px;
+  box-shadow: 0 0 0 4px rgba(215,255,80,.08), 0 8px 18px rgba(0,0,0,.18);
+}
+
+.inji-avatar-spark {
+  position: absolute;
+  right: -4px;
+  top: -5px;
+  padding: 2px;
+  width: 15px;
+  height: 15px;
+  color: var(--ink);
+  border-radius: 50%;
+  background: var(--paper);
+}
+
+.inji-title strong {
+  font-size: 17px;
+  letter-spacing: -.03em;
+}
+
+.inji-title span {
+  color: #bdc5bb;
+  font-size: 12px;
+}
+
+.inji-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  transition: color .2s ease, background .2s ease;
+}
+
+.inji-close:hover {
+  background: rgba(255,255,255,.08);
+}
+
+.inji-messages {
+  gap: 12px;
+  max-height: 350px;
+  padding: 20px 18px 16px;
+  background: #e9ebe3;
+}
+
+.inji-message {
+  max-width: 90%;
+  padding: 11px 13px;
+  border-radius: 11px;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.inji-bot {
+  border-color: rgba(16,17,15,.12);
+  box-shadow: 0 3px 10px rgba(16,17,15,.04);
+}
+
+.inji-welcome {
+  position: relative;
+  padding-left: 15px;
+}
+
+.inji-welcome::before {
+  content: '';
+  position: absolute;
+  top: 13px;
+  bottom: 13px;
+  left: 0;
+  width: 3px;
+  border-radius: 4px;
+  background: var(--lime);
+}
+
+.inji-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding-top: 1px;
+}
+
+.inji-suggestions span {
+  width: 100%;
+  margin: 1px 0 2px;
+  color: #6b756a;
+  font: 9px 'DM Mono', monospace;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.inji-suggestions button {
+  padding: 8px 10px;
+  border: 1px solid rgba(16,17,15,.15);
+  border-radius: 999px;
+  color: #4d594e;
+  background: rgba(255,255,255,.58);
+  font-size: 11px;
+  line-height: 1.25;
+  text-align: left;
+  transition: color .2s ease, border-color .2s ease, background .2s ease, transform .2s var(--ease-out);
+}
+
+.inji-suggestions button:hover {
+  border-color: rgba(16,17,15,.35);
+  color: var(--ink);
+  background: var(--paper);
+  transform: translateY(-1px);
+}
 
 .inji-input {
-  display: flex;
-  align-items: center;
   gap: 9px;
-
-  flex: 0 0 auto;
-
   padding: 14px;
-
-  border-top: 1px solid rgba(16, 17, 15, 0.1);
-
   background: #f7f8f3;
 }
 
 .inji-input input {
-  min-width: 0;
-
-  flex: 1;
-
-  height: 42px;
-
-  box-sizing: border-box;
-
   padding: 11px 12px;
-
-  border: 1px solid rgba(16, 17, 15, 0.16);
   border-radius: 7px;
-
-  color: var(--ink);
-
   background: #fff;
-
   font-size: 14px;
-
-  outline: none;
-
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.inji-input input:focus {
-  border-color: #6d43e9;
-
-  box-shadow:
-    0 0 0 3px rgba(109, 67, 233, 0.12);
-}
-
-.inji-input input::placeholder {
-  color: #adb3ac;
 }
 
 .inji-input button {
-  display: grid;
-  place-items: center;
-
   width: 42px;
-  height: 42px;
-
-  flex: 0 0 42px;
-
-  border: 0;
+  flex-basis: 42px;
   border-radius: 7px;
-
-  color: var(--ink);
-
-  background: var(--lime);
-
-  cursor: pointer;
-
-  transition:
-    transform 0.2s var(--ease-out),
-    background 0.2s ease;
+  transition: transform .2s var(--ease-out), background .2s ease;
 }
 
 .inji-input button:hover {
-  background: #e0ff75;
-
   transform: translateY(-1px);
 }
-
-/* ============================================================
-   FLOATING LAUNCHER
-   ============================================================ */
 
 .inji-button {
-  position: fixed;
-
-  right: 28px;
-  bottom: max(24px, env(safe-area-inset-bottom));
-
-  z-index: 61;
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  gap: 9px;
-
   min-height: 50px;
-
   padding: 0 17px;
-
-  border: 1px solid rgba(16, 17, 15, 0.2);
-  border-radius: 999px;
-
-  color: var(--ink);
-
-  background: var(--lime);
-
-  box-shadow:
-    0 16px 38px rgba(16, 17, 15, 0.2),
-    0 2px 8px rgba(16, 17, 15, 0.08);
-
+  border-color: rgba(16,17,15,.2);
+  box-shadow: 0 16px 38px rgba(16,17,15,.2), 0 2px 8px rgba(16,17,15,.08);
   font-size: 13px;
-  font-weight: 800;
-
-  cursor: pointer;
-
-  transition:
-    transform 0.2s var(--ease-out),
-    background 0.2s ease;
 }
-
-.inji-button:hover {
-  background: #e0ff75;
-
-  transform: translateY(-3px);
-}
-
-.inji-button-open {
-  width: 48px;
-
-  padding: 0;
-}
-
-/* ============================================================
-   WELCOME TEASER
-   ============================================================ */
-
-.inji-welcome-teaser {
-  position: fixed;
-
-  right: 28px;
-
-  bottom: calc(
-    max(24px, env(safe-area-inset-bottom)) + 64px
-  );
-
-  z-index: 62;
-
-  display: flex;
-  align-items: center;
-
-  gap: 10px;
-
-  width: min(325px, calc(100vw - 32px));
-
-  box-sizing: border-box;
-
-  padding: 12px 12px 12px 15px;
-
-  border: 1px solid rgba(16, 17, 15, 0.15);
-  border-radius: 12px;
-
-  background: var(--paper);
-
-  box-shadow:
-    0 18px 48px rgba(16, 17, 15, 0.18),
-    0 3px 12px rgba(16, 17, 15, 0.08);
-
-  animation: inji-teaser-in 0.35s var(--ease-out) both;
-}
-
-@keyframes inji-teaser-in {
-  from {
-    opacity: 0;
-
-    transform: translateY(8px) scale(0.98);
-  }
-
-  to {
-    opacity: 1;
-
-    transform: translateY(0) scale(1);
-  }
-}
-
-.inji-teaser-copy {
-  min-width: 0;
-
-  display: flex;
-  flex: 1;
-
-  flex-direction: column;
-  align-items: flex-start;
-
-  gap: 3px;
-
-  padding: 0;
-
-  border: 0;
-
-  color: #626d62;
-
-  background: transparent;
-
-  text-align: left;
-
-  cursor: pointer;
-}
-
-.inji-teaser-copy span {
-  color: #6b43e9;
-
-  font: 9px 'DM Mono', monospace;
-
-  letter-spacing: 0.06em;
-
-  text-transform: uppercase;
-}
-
-.inji-teaser-copy strong {
-  color: var(--ink);
-
-  font: 600 13px/1.25 'Space Grotesk', sans-serif;
-}
-
-.inji-teaser-action {
-  flex: 0 0 auto;
-
-  padding: 8px 10px;
-
-  border: 1px solid rgba(16, 17, 15, 0.14);
-  border-radius: 5px;
-
-  color: var(--ink);
-
-  background: var(--lime);
-
-  font-size: 11px;
-  font-weight: 800;
-
-  cursor: pointer;
-
-  transition:
-    transform 0.2s var(--ease-out),
-    background 0.2s ease;
-}
-
-.inji-teaser-action:hover {
-  background: #e0ff75;
-
-  transform: translateY(-1px);
-}
-
-.inji-teaser-dismiss {
-  align-self: flex-start;
-
-  padding: 0 1px;
-
-  border: 0;
-
-  color: #7e877c;
-
-  background: transparent;
-
-  font-size: 18px;
-
-  line-height: 1;
-
-  cursor: pointer;
-}
-
-.inji-teaser-dismiss:hover {
-  color: var(--ink);
-}
-
-/* ============================================================
-   DISABLED STATES
-   ============================================================ */
-
-.inji-button:disabled,
-.inji-input button:disabled,
-.inji-input input:disabled,
-.inji-suggestions button:disabled,
-.inji-lead-form button:disabled {
-  cursor: wait;
-
-  opacity: 0.65;
-}
-
-/* ============================================================
-   MOBILE
-   ============================================================ */
 
 @media (max-width: 620px) {
   .inji-chat {
     right: 12px;
     left: 12px;
-
-    bottom: calc(
-      78px + env(safe-area-inset-bottom)
-    );
-
+    bottom: calc(78px + env(safe-area-inset-bottom));
     width: auto;
-
     max-width: none;
-
-    max-height: calc(
-      100vh - 96px - env(safe-area-inset-bottom)
-    );
-
+    box-sizing: border-box;
     border-radius: 14px;
-  }
-
-  .inji-header {
-    padding: 15px 16px;
-  }
-
-  .inji-avatar {
-    width: 35px;
-    height: 35px;
-
-    flex-basis: 35px;
-  }
-
-  .inji-title strong {
-    font-size: 16px;
-  }
-
-  .inji-title span {
-    font-size: 11px;
   }
 
   .inji-messages {
     max-height: min(52vh, 350px);
-
-    padding: 17px 14px 14px;
-  }
-
-  .inji-message {
-    max-width: 92%;
-
-    font-size: 13px;
-  }
-
-  .inji-lead-form > strong {
-    font-size: 17px;
-  }
-
-  .inji-human-controls {
-    font-size: 8px;
-  }
-
-  .inji-rating button {
-    width: 40px;
-    height: 40px;
-  }
-
-  .inji-input {
-    padding: 11px;
-  }
-
-  .inji-input input {
-    height: 42px;
   }
 
   .inji-button {
     right: 16px;
-
-    bottom: max(
-      16px,
-      env(safe-area-inset-bottom)
-    );
-  }
-
-  .inji-welcome-teaser {
-    right: 12px;
-
-    bottom: calc(
-      70px + env(safe-area-inset-bottom)
-    );
-
-    width: calc(100vw - 24px);
+    bottom: max(16px, env(safe-area-inset-bottom));
   }
 }
 
-/* ============================================================
-   REDUCED MOTION
-   ============================================================ */
 
-@media (prefers-reduced-motion: reduce) {
-  .inji-chat,
-  .inji-welcome-teaser,
-  .inji-typing-dots i {
-    animation: none;
+/* =========================================================
+   Inji — premium Formiva chat refinements
+   Keeps the existing Inji visual system and adds the
+   connected-state / inline end-chat confirmation UI.
+   ========================================================= */
+
+.inji-chat {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  max-height: calc(100vh - 110px);
+}
+
+.inji-header {
+  flex: 0 0 auto;
+}
+
+.inji-messages {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.inji-input {
+  flex: 0 0 auto;
+}
+
+/* Lead form */
+.inji-lead-form {
+  display: grid;
+  gap: 10px;
+  margin: 10px 8px;
+  padding: 16px;
+  border: 1px solid rgba(16, 17, 15, .12);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .72);
+  box-shadow: 0 8px 26px rgba(16, 17, 15, .06);
+}
+
+.inji-lead-form > strong {
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.3;
+}
+
+.inji-lead-form > p {
+  margin: 0 0 2px;
+  color: #687166;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.inji-lead-form label,
+.inji-feedback-form label {
+  display: grid;
+  gap: 5px;
+  color: #536055;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+
+.inji-lead-form input,
+.inji-feedback-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgba(16, 17, 15, .14);
+  border-radius: 8px;
+  outline: none;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+
+.inji-lead-form input {
+  min-height: 38px;
+  padding: 9px 10px;
+}
+
+.inji-lead-form input:focus,
+.inji-feedback-form textarea:focus {
+  border-color: rgba(145, 184, 25, .65);
+  box-shadow: 0 0 0 3px rgba(199, 255, 50, .14);
+}
+
+.inji-lead-form small {
+  color: #798276;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.inji-lead-form > button,
+.inji-feedback-form > button:not(.inji-text-button) {
+  min-height: 38px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--accent, #c7ff32);
+  color: #11140e;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.inji-lead-form > button:hover,
+.inji-feedback-form > button:not(.inji-text-button):hover {
+  filter: brightness(1.03);
+  transform: translateY(-1px);
+}
+
+.inji-form-error {
+  margin: 0;
+  color: #a43b2e;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+/* Waiting / transfer status */
+.inji-handoff-status {
+  margin: 10px 8px;
+  padding: 12px 13px;
+  border: 1px solid rgba(16, 17, 15, .1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .62);
+  color: #5c675d;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.inji-handoff-status b {
+  display: inline-block;
+  margin-top: 5px;
+  color: var(--ink);
+  font-size: 11px;
+}
+
+/* Connected state */
+.inji-human-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 10px 8px;
+  padding: 10px 12px;
+  border: 1px solid rgba(16, 17, 15, .1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .7);
+}
+
+.inji-connected-status {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #59645a;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.inji-connected-status strong {
+  color: var(--ink);
+}
+
+.inji-connected-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: #8db80d;
+  box-shadow: 0 0 0 3px rgba(199, 255, 50, .15);
+}
+
+.inji-end-chat-button {
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid rgba(16, 17, 15, .14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .8);
+  color: #475247;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color .18s ease, background .18s ease, color .18s ease;
+}
+
+.inji-end-chat-button:hover {
+  border-color: rgba(16, 17, 15, .28);
+  background: #fff;
+  color: var(--ink);
+}
+
+.inji-end-chat-button:disabled {
+  opacity: .55;
+  cursor: default;
+}
+
+/* Human typing */
+.inji-agent-typing {
+  margin: 0 8px 8px;
+  color: #657065;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+
+/* Inline end-chat confirmation */
+.inji-end-confirm {
+  display: flex;
+  gap: 10px;
+  margin: 0 8px 10px;
+  padding: 13px;
+  border: 1px solid rgba(16, 17, 15, .11);
+  border-radius: 13px;
+  background: #f9faf6;
+  box-shadow: 0 8px 24px rgba(16, 17, 15, .07);
+  animation: inji-confirm-in .18s ease-out both;
+}
+
+.inji-end-confirm-icon {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: rgba(199, 255, 50, .24);
+  color: #4c6312;
+  font-size: 19px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.inji-end-confirm-content {
+  min-width: 0;
+}
+
+.inji-end-confirm-content strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.inji-end-confirm-content p {
+  margin: 0;
+  color: #6e786d;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.inji-end-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 7px;
+  margin-top: 11px;
+}
+
+.inji-end-cancel,
+.inji-end-confirm-button {
+  min-height: 31px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.inji-end-cancel {
+  border: 1px solid rgba(16, 17, 15, .12);
+  background: #fff;
+  color: #5d675d;
+}
+
+.inji-end-confirm-button {
+  border: 1px solid rgba(16, 17, 15, .08);
+  background: var(--accent, #c7ff32);
+  color: #11140e;
+}
+
+.inji-end-cancel:hover {
+  border-color: rgba(16, 17, 15, .22);
+}
+
+.inji-end-confirm-button:hover {
+  filter: brightness(1.03);
+  transform: translateY(-1px);
+}
+
+.inji-end-cancel:disabled,
+.inji-end-confirm-button:disabled {
+  opacity: .55;
+  cursor: default;
+}
+
+@keyframes inji-confirm-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Feedback */
+.inji-feedback-form {
+  margin: 10px 8px;
+  padding: 15px;
+  border: 1px solid rgba(16, 17, 15, .11);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .72);
+}
+
+.inji-feedback-form > strong {
+  display: block;
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.inji-feedback-form > p {
+  margin: 5px 0 12px;
+  color: #6c766b;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.inji-rating {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 13px;
+}
+
+.inji-rating button {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(16, 17, 15, .1);
+  border-radius: 9px;
+  background: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  transition: transform .16s ease, border-color .16s ease, background .16s ease;
+}
+
+.inji-rating button:hover,
+.inji-rating button.active {
+  border-color: rgba(141, 184, 13, .4);
+  background: rgba(199, 255, 50, .16);
+  transform: translateY(-1px);
+}
+
+.inji-feedback-form textarea {
+  min-height: 72px;
+  padding: 9px 10px;
+  resize: vertical;
+}
+
+.inji-feedback-form .inji-text-button {
+  display: block;
+  margin: 9px auto 0;
+  padding: 4px 6px;
+  border: 0;
+  background: transparent;
+  color: #6b756a;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.inji-feedback-form .inji-text-button:hover {
+  color: var(--ink);
+}
+
+@media (max-width: 620px) {
+  .inji-chat {
+    top: 12px;
+    right: 12px;
+    bottom: calc(78px + env(safe-area-inset-bottom));
+    left: 12px;
+    width: auto;
+    max-width: none;
+    max-height: calc(100vh - 102px - env(safe-area-inset-bottom));
+    border-radius: 14px;
   }
 
-  .inji-button,
-  .inji-input button,
-  .inji-suggestions button,
-  .inji-rating button {
-    transition: none;
+  .inji-messages {
+    max-height: none;
+    min-height: 0;
+  }
+
+  .inji-lead-form {
+    gap: 8px;
+  }
+
+  .inji-lead-form > strong {
+    font-size: 15px;
+  }
+
+  .inji-lead-form input {
+    min-height: 36px;
+  }
+
+  .inji-human-controls {
+    margin-left: 8px;
+    margin-right: 8px;
+  }
+
+  .inji-connected-status {
+    font-size: 10px;
+  }
+
+  .inji-end-confirm-actions {
+    flex-wrap: wrap;
   }
 }

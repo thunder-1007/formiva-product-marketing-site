@@ -42,25 +42,15 @@ const TTL = 24 * 60 * 60;
 const TTL_MS = TTL * 1000;
 
 function config() {
-  const url =
-    process.env.UPSTASH_REDIS_REST_URL?.replace(/\/$/, "");
+  const url = process.env.UPSTASH_REDIS_REST_URL?.replace(/\/$/, "");
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
 
-  const token =
-    process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) throw new Error("storage_not_configured");
 
-  if (!url || !token) {
-    throw new Error("storage_not_configured");
-  }
-
-  return {
-    url,
-    token,
-  };
+  return { url, token };
 }
 
-export async function redisCommand<T>(
-  command: string[],
-): Promise<T> {
+export async function redisCommand<T>(command: string[]): Promise<T> {
   const { url, token } = config();
 
   const response = await fetch(url, {
@@ -72,49 +62,21 @@ export async function redisCommand<T>(
     body: JSON.stringify(command),
   });
 
-  if (!response.ok) {
-    throw new Error("storage_request_failed");
-  }
+  if (!response.ok) throw new Error("storage_request_failed");
 
-  const data = (await response.json()) as {
-    result: T;
-  };
-
+  const data = (await response.json()) as { result: T };
   return data.result;
 }
 
-// ------------------------------------------------------------
-// Redis keys
-// ------------------------------------------------------------
+const sessionKey = (id: string) => `formiva:inji:session:${id}`;
+const messageKey = (id: number) => `formiva:inji:telegram-message:${id}`;
+const updateKey = (id: number) => `formiva:inji:telegram-update:${id}`;
+const activeChatKey = (chatId: string) => `formiva:inji:active-chat:${chatId}`;
 
-const sessionKey = (id: string) =>
-  `formiva:inji:session:${id}`;
+export const isExpired = (session: HandoffSession) =>
+  Date.now() >= session.expiresAt;
 
-const messageKey = (id: number) =>
-  `formiva:inji:telegram-message:${id}`;
-
-const updateKey = (id: number) =>
-  `formiva:inji:telegram-update:${id}`;
-
-// Stores the currently active customer conversation for the
-// admin's Telegram chat.
-//
-// This is the fallback used when Telegram sends a normal
-// message without reply_to_message.
-const activeChatKey = (chatId: string) =>
-  `formiva:inji:active-chat:${chatId}`;
-
-// ------------------------------------------------------------
-// Session helpers
-// ------------------------------------------------------------
-
-export const isExpired = (
-  session: HandoffSession,
-) => Date.now() >= session.expiresAt;
-
-export async function saveSession(
-  session: HandoffSession,
-) {
+export async function saveSession(session: HandoffSession) {
   session.updatedAt = Date.now();
 
   await redisCommand([
@@ -126,74 +88,33 @@ export async function saveSession(
   ]);
 }
 
-export async function getSession(
-  id: string,
-): Promise<HandoffSession | null> {
+export async function getSession(id: string): Promise<HandoffSession | null> {
   const value = await redisCommand<string | null>([
     "GET",
     sessionKey(id),
   ]);
 
-  if (!value) {
-    return null;
-  }
+  if (!value) return null;
 
-  const session =
-    JSON.parse(value) as HandoffSession;
+  const session = JSON.parse(value) as HandoffSession;
 
-  if (isExpired(session)) {
-    return {
-      ...session,
-      status: "expired",
-    };
-  }
-
-  return session;
+  return isExpired(session)
+    ? { ...session, status: "expired" }
+    : session;
 }
 
-export async function deleteSession(
-  id: string,
-) {
-  await redisCommand([
-    "DEL",
-    sessionKey(id),
-  ]);
+export async function deleteSession(id: string) {
+  await redisCommand(["DEL", sessionKey(id)]);
 }
 
-// ------------------------------------------------------------
-// Handoff rate limiting
-// ------------------------------------------------------------
+export async function allowHandoff(id: string) {
+  const key = `formiva:inji:rate:${id}`;
+  const count = await redisCommand<number>(["INCR", key]);
 
-export async function allowHandoff(
-  id: string,
-) {
-  const key =
-    `formiva:inji:rate:${id}`;
-
-  const count = await redisCommand<number>([
-    "INCR",
-    key,
-  ]);
-
-  if (count === 1) {
-    await redisCommand([
-      "EXPIRE",
-      key,
-      "60",
-    ]);
-  }
+  if (count === 1) await redisCommand(["EXPIRE", key, "60"]);
 
   return count <= 5;
 }
-
-// ------------------------------------------------------------
-// Telegram message -> Formiva session mapping
-// ------------------------------------------------------------
-//
-// Every Telegram message sent by the website is mapped to the
-// corresponding customer session.
-//
-// This lets a native Telegram Reply resolve the exact session.
 
 export async function saveTelegramMessage(
   sessionId: string,
@@ -208,30 +129,14 @@ export async function saveTelegramMessage(
   ]);
 }
 
-export async function getTelegramMessageSession(
-  messageId: number,
-) {
+export async function getTelegramMessageSession(messageId: number) {
   return redisCommand<string | null>([
     "GET",
     messageKey(messageId),
   ]);
 }
 
-// ------------------------------------------------------------
-// Active Telegram chat fallback
-// ------------------------------------------------------------
-//
-// When Take Chat is clicked, the admin Telegram chat is linked
-// to that active Formiva session.
-//
-// Therefore, even if Telegram does NOT provide
-// reply_to_message, we can still determine which customer
-// should receive the admin's message.
-
-export async function saveActiveChat(
-  chatId: string,
-  sessionId: string,
-) {
+export async function saveActiveChat(chatId: string, sessionId: string) {
   await redisCommand([
     "SET",
     activeChatKey(chatId),
@@ -241,47 +146,29 @@ export async function saveActiveChat(
   ]);
 }
 
-export async function getActiveChat(
-  chatId: string,
-) {
+export async function getActiveChat(chatId: string) {
   return redisCommand<string | null>([
     "GET",
     activeChatKey(chatId),
   ]);
 }
 
-export async function deleteActiveChat(
-  chatId: string,
-) {
-  await redisCommand([
-    "DEL",
-    activeChatKey(chatId),
-  ]);
+export async function deleteActiveChat(chatId: string) {
+  await redisCommand(["DEL", activeChatKey(chatId)]);
 }
 
-// ------------------------------------------------------------
-// Telegram update idempotency
-// ------------------------------------------------------------
-
-export async function claimTelegramUpdate(
-  updateId: number,
-) {
-  const result =
-    await redisCommand<string | null>([
-      "SET",
-      updateKey(updateId),
-      "1",
-      "NX",
-      "EX",
-      String(TTL),
-    ]);
+export async function claimTelegramUpdate(updateId: number) {
+  const result = await redisCommand<string | null>([
+    "SET",
+    updateKey(updateId),
+    "1",
+    "NX",
+    "EX",
+    String(TTL),
+  ]);
 
   return result === "OK";
 }
-
-// ------------------------------------------------------------
-// Create new handoff session
-// ------------------------------------------------------------
 
 export function newSession(
   sessionId: string,
@@ -297,14 +184,10 @@ export function newSession(
     sessionId,
     question,
     originalQuestion: question,
-
     ...details,
-
     status: "waiting",
     messages: [],
-
     isTyping: false,
-
     createdAt: now,
     updatedAt: now,
     expiresAt: now + TTL_MS,
