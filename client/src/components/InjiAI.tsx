@@ -35,7 +35,7 @@ export default function InjiAI() {
     let cancelled = false;
     const poll = async () => {
       try {
-        const response = await fetch(`/api/inji/reply?sessionId=${encodeURIComponent(session.current)}`);
+        const response = await fetch(`/api/inji/reply?sessionId=${encodeURIComponent(session.current)}`, { cache: "no-store" });
         if (!response.ok || cancelled) return;
         const data = await response.json() as { status?: "waiting" | "active" | "closed" | "expired" | "not_found"; messages?: Message[]; agentName?: string; isTyping?: boolean };
         if (cancelled || !data.status) return;

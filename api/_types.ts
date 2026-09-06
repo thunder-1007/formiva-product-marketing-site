@@ -7,6 +7,7 @@ export type ApiRequest = {
 
 export type ApiResponse = {
   status: (code: number) => ApiResponse;
+  setHeader?: (name: string, value: string) => ApiResponse;
   json: (body: unknown) => void;
   end: () => void;
 };
