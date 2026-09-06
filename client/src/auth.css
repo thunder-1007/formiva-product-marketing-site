@@ -19,3 +19,67 @@
 .auth-form {
   animation: auth-rise .7s .18s var(--ease-out) both;
 }
+
+@keyframes auth-placeholder-pointer {
+  0%, 100% { background-position: 92px 50%; }
+  50% { background-position: 104px 50%; }
+}
+
+.auth-form input:placeholder-shown {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236d43e9' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 4 6.2 15.2 2.1-6.1 6.1-2.1L4 4Z'/%3E%3Cpath d='m13 13 5 5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 92px 50%;
+  background-size: 16px 16px;
+  animation: auth-placeholder-pointer 2.2s ease-in-out infinite;
+}
+
+.auth-form input:focus,
+.auth-form input:not(:placeholder-shown) {
+  background-image: none;
+  animation: none;
+}
+
+.auth-form label {
+  color: #3f4a40;
+  font-size: 11px;
+}
+
+.auth-form input {
+  padding-right: 42px;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.auth-form input::placeholder {
+  color: #69746a;
+  opacity: 1;
+}
+
+.auth-kicker {
+  font-size: 10px;
+}
+
+.auth-back {
+  color: #59645a;
+  font-size: 12px;
+}
+
+.auth-form > p {
+  color: #626d62;
+  font-size: 14px;
+}
+
+.auth-legal,
+.auth-switch {
+  color: #626d62;
+  font-size: 11px;
+}
+
+.auth-switch a,
+.auth-legal a {
+  color: #5d36d6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-form input:placeholder-shown { animation: none; }
+}

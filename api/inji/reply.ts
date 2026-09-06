@@ -1,6 +1,6 @@
-import { type ApiRequest, type ApiResponse } from "../_types";
-import { methodNotAllowed, validSessionId } from "./common";
-import { deleteSession, getSession } from "./storage";
+import { type ApiRequest, type ApiResponse } from "../_types.js";
+import { methodNotAllowed, validSessionId } from "./common.js";
+import { deleteSession, getSession } from "./storage.js";
 
 export default async function handler(request: ApiRequest, response: ApiResponse) {
   if (request.method !== "GET") {

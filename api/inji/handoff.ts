@@ -1,4 +1,4 @@
-import { type ApiRequest, type ApiResponse } from "../_types";
+import { type ApiRequest, type ApiResponse } from "../_types.js";
 import {
   bodyObject,
   MAX_QUESTION_LENGTH,
@@ -6,8 +6,8 @@ import {
   sendTelegramNotification,
   validConversation,
   validSessionId,
-} from "./common";
-import { allowHandoff, deleteSession, newSession, saveSession } from "./storage";
+} from "./common.js";
+import { allowHandoff, deleteSession, newSession, saveSession } from "./storage.js";
 
 export default async function handler(request: ApiRequest, response: ApiResponse) {
   if (request.method !== "POST") {

@@ -1,5 +1,5 @@
-import { type ApiRequest, type ApiResponse } from "../_types";
-import { type HandoffSession, isExpired } from "./storage";
+import { type ApiRequest, type ApiResponse } from "../_types.js";
+import { type HandoffSession, isExpired } from "./storage.js";
 
 export const MAX_QUESTION_LENGTH = 2000;
 export const MAX_CONVERSATION_ITEMS = 20;

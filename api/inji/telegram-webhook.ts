@@ -1,6 +1,6 @@
-import { type ApiRequest, type ApiResponse } from "../_types";
-import { bodyObject, configuredTelegram, headerValue, MAX_MESSAGE_LENGTH, methodNotAllowed, validSessionId } from "./common";
-import { getSession, saveSession } from "./storage";
+import { type ApiRequest, type ApiResponse } from "../_types.js";
+import { bodyObject, configuredTelegram, headerValue, MAX_MESSAGE_LENGTH, methodNotAllowed, validSessionId } from "./common.js";
+import { getSession, saveSession } from "./storage.js";
 
 export default async function handler(request: ApiRequest, response: ApiResponse) {
   if (request.method !== "POST") {
