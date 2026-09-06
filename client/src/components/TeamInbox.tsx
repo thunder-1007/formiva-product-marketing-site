@@ -80,7 +80,7 @@ export default function TeamInbox() {
     if (!adminKey) return;
     try {
       setLoading(true);
-      const response = await fetch("/api/inji/admin/sessions", { headers: { "x-inji-admin-key": adminKey }, cache: "no-store" });
+      const response = await fetch("/api/inji/admin", { headers: { "x-inji-admin-key": adminKey }, cache: "no-store" });
       const data = await response.json() as { ok?: boolean; sessions?: Session[]; error?: string };
       if (!response.ok || !data.ok) throw new Error(data.error || "Unable to load conversations");
       const next = data.sessions || [];
@@ -97,7 +97,7 @@ export default function TeamInbox() {
   async function fetchSelected() {
     if (!adminKey || !selectedId) return;
     try {
-      const response = await fetch(`/api/inji/admin/session?sessionId=${encodeURIComponent(selectedId)}`, { headers: { "x-inji-admin-key": adminKey }, cache: "no-store" });
+      const response = await fetch(`/api/inji/admin?sessionId=${encodeURIComponent(selectedId)}`, { headers: { "x-inji-admin-key": adminKey }, cache: "no-store" });
       const data = await response.json() as { ok?: boolean; session?: Session; error?: string };
       if (!response.ok || !data.ok || !data.session) throw new Error(data.error || "Conversation unavailable");
       setSelected(data.session);
@@ -151,7 +151,7 @@ export default function TeamInbox() {
     setBusy(true);
     setError("");
     try {
-      const response = await fetch("/api/inji/admin/take", { method: "POST", headers, body: JSON.stringify({ sessionId: selected.sessionId }) });
+      const response = await fetch("/api/inji/admin/take", { method: "POST", headers, body: JSON.stringify({ action: "take", sessionId: selected.sessionId }) });
       const data = await response.json() as { ok?: boolean; session?: Session; error?: string };
       if (!response.ok || !data.ok || !data.session) throw new Error(data.error || "Unable to take chat");
       setSelected(data.session);
@@ -167,7 +167,7 @@ export default function TeamInbox() {
     if (!selected || busy) return;
     setBusy(true);
     try {
-      const response = await fetch("/api/inji/admin/close", { method: "POST", headers, body: JSON.stringify({ sessionId: selected.sessionId }) });
+      const response = await fetch("/api/inji/admin/close", { method: "POST", headers, body: JSON.stringify({ action: "close", sessionId: selected.sessionId }) });
       const data = await response.json() as { ok?: boolean; session?: Session; error?: string };
       if (!response.ok || !data.ok || !data.session) throw new Error(data.error || "Unable to close chat");
       setSelected(data.session);
@@ -182,7 +182,7 @@ export default function TeamInbox() {
   async function setTyping(active: boolean) {
     if (!selected || selected.status !== "active") return;
     try {
-      await fetch("/api/inji/admin/typing", { method: "POST", headers, body: JSON.stringify({ sessionId: selected.sessionId, isTyping: active }) });
+      await fetch("/api/inji/admin/typing", { method: "POST", headers, body: JSON.stringify({ action: "typing", sessionId: selected.sessionId, isTyping: active }) });
     } catch {
       // The next poll will recover the visible state.
     }
@@ -205,7 +205,7 @@ export default function TeamInbox() {
     setInput("");
     setBusy(true);
     try {
-      const response = await fetch("/api/inji/admin/message", { method: "POST", headers, body: JSON.stringify({ sessionId: selected.sessionId, message: text }) });
+      const response = await fetch("/api/inji/admin/message", { method: "POST", headers, body: JSON.stringify({ action: "message", sessionId: selected.sessionId, message: text }) });
       const data = await response.json() as { ok?: boolean; session?: Session; error?: string };
       if (!response.ok || !data.ok || !data.session) throw new Error(data.error || "Unable to send message");
       setSelected(data.session);
