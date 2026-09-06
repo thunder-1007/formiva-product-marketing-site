@@ -20,6 +20,9 @@ export type HandoffSession = {
   originalQuestion: string;
   agentName?: string;
   isTyping: boolean;
+  typingUntil?: number;
+  customerTyping?: boolean;
+  customerTypingUntil?: number;
   rating?: number;
   feedback?: string;
   feedbackSubmitted?: boolean;
@@ -27,7 +30,6 @@ export type HandoffSession = {
   updatedAt: number;
   closedAt?: number;
   expiresAt: number;
-  typingUntil?: number;
 };
 
 const TTL = 24 * 60 * 60;
@@ -59,25 +61,42 @@ const sessionsIndexKey = "formiva:inji:sessions:index";
 
 export const isExpired = (session: HandoffSession) => Date.now() >= session.expiresAt;
 
-export const normalizeTyping = (session: HandoffSession) => {
-  if (session.isTyping && session.typingUntil && Date.now() >= session.typingUntil) {
-    return { ...session, isTyping: false, typingUntil: undefined };
+export const normalizeTyping = (session: HandoffSession): HandoffSession => {
+  const now = Date.now();
+  let next = session;
+
+  if (session.isTyping && session.typingUntil && now >= session.typingUntil) {
+    next = { ...next, isTyping: false, typingUntil: undefined };
   }
-  return session;
+
+  if (next.customerTyping && next.customerTypingUntil && now >= next.customerTypingUntil) {
+    next = { ...next, customerTyping: false, customerTypingUntil: undefined };
+  }
+
+  return next;
 };
 
 export async function saveSession(session: HandoffSession) {
   session.updatedAt = Date.now();
   const normalized = normalizeTyping(session);
   await redisCommand(["SET", sessionKey(session.sessionId), JSON.stringify(normalized), "EX", String(TTL)]);
-  await redisCommand(["ZADD", sessionsIndexKey, String(session.updatedAt), session.sessionId]);
+  await redisCommand(["ZADD", sessionsIndexKey, String(normalized.updatedAt), session.sessionId]);
 }
 
 export async function getSession(id: string): Promise<HandoffSession | null> {
   const value = await redisCommand<string | null>(["GET", sessionKey(id)]);
   if (!value) return null;
   const session = JSON.parse(value) as HandoffSession;
-  if (isExpired(session)) return { ...session, status: "expired", isTyping: false, typingUntil: undefined };
+  if (isExpired(session)) {
+    return {
+      ...session,
+      status: "expired",
+      isTyping: false,
+      typingUntil: undefined,
+      customerTyping: false,
+      customerTypingUntil: undefined,
+    };
+  }
   return normalizeTyping(session);
 }
 
@@ -85,10 +104,15 @@ export async function deleteSession(id: string) {
   await redisCommand(["DEL", sessionKey(id)]);
 }
 
-
 export async function listSessions(limit = 100): Promise<HandoffSession[]> {
-  const ids = await redisCommand<string[]>(["ZREVRANGE", sessionsIndexKey, "0", String(Math.max(0, limit - 1))]);
+  const ids = await redisCommand<string[]>([
+    "ZREVRANGE",
+    sessionsIndexKey,
+    "0",
+    String(Math.max(0, limit - 1)),
+  ]);
   if (!Array.isArray(ids) || ids.length === 0) return [];
+
   const sessions = await Promise.all(ids.map((id) => getSession(id)));
   return sessions.filter((session): session is HandoffSession => Boolean(session));
 }
@@ -96,8 +120,19 @@ export async function listSessions(limit = 100): Promise<HandoffSession[]> {
 export async function setSessionTyping(sessionId: string, isTyping: boolean, durationMs = 2500) {
   const session = await getSession(sessionId);
   if (!session || session.status !== "active") return null;
+
   session.isTyping = isTyping;
   session.typingUntil = isTyping ? Date.now() + durationMs : undefined;
+  await saveSession(session);
+  return session;
+}
+
+export async function setCustomerTyping(sessionId: string, isTyping: boolean, durationMs = 2200) {
+  const session = await getSession(sessionId);
+  if (!session || session.status !== "active") return null;
+
+  session.customerTyping = isTyping;
+  session.customerTypingUntil = isTyping ? Date.now() + durationMs : undefined;
   await saveSession(session);
   return session;
 }
@@ -134,7 +169,11 @@ export async function claimTelegramUpdate(updateId: number) {
   return result === "OK";
 }
 
-export function newSession(sessionId: string, question: string, details: Pick<HandoffSession, "visitorName" | "company" | "phone" | "email">): HandoffSession {
+export function newSession(
+  sessionId: string,
+  question: string,
+  details: Pick<HandoffSession, "visitorName" | "company" | "phone" | "email">
+): HandoffSession {
   const now = Date.now();
   return {
     sessionId,
@@ -144,6 +183,7 @@ export function newSession(sessionId: string, question: string, details: Pick<Ha
     status: "waiting",
     messages: [],
     isTyping: false,
+    customerTyping: false,
     createdAt: now,
     updatedAt: now,
     expiresAt: now + TTL_MS,

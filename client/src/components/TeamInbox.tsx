@@ -23,6 +23,8 @@ type Session = {
   agentName?: string;
   isTyping: boolean;
   typingUntil?: number;
+  customerTyping?: boolean;
+  customerTypingUntil?: number;
   rating?: number;
   feedback?: string;
   feedbackSubmitted?: boolean;
@@ -250,7 +252,7 @@ export default function TeamInbox() {
           <div className="team-chat-body">
             <div className="team-question-card"><small>ORIGINAL QUESTION</small><p>{selected.originalQuestion}</p></div>
             {visibleMessages.map((message) => <div key={message.id} className={`team-message-row ${message.role === "human" ? "human" : "visitor"}`}><div className="team-message-bubble">{message.role === "human" && <strong>{message.senderName || selected.agentName || "Formiva Team"}</strong>}<span>{message.text}</span><time>{timeLabel(message.timestamp)}</time></div></div>)}
-            {selected.status === "active" && selected.isTyping && <div className="team-customer-typing"><span /><span /><span /> Customer is typing…</div>}
+            {selected.status === "active" && selected.customerTyping && <div className="team-customer-typing"><span /><span /><span /> Customer is typing…</div>}
           </div>
           <form className="team-composer" onSubmit={sendMessage}><textarea ref={inputRef} value={input} onChange={(e) => handleInput(e.target.value)} onBlur={() => { if (typingTimer.current) window.clearTimeout(typingTimer.current); void setTyping(false); }} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void sendMessage(); } }} placeholder={selected.status === "active" ? "Write a reply…" : "Take the chat to reply"} disabled={selected.status !== "active" || busy} /><button type="submit" disabled={!input.trim() || selected.status !== "active" || busy} aria-label="Send reply"><Send size={17} /></button></form>
         </>}

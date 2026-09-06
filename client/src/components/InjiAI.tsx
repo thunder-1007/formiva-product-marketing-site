@@ -34,6 +34,9 @@ export default function InjiAI() {
   const timer = useRef<number | null>(null);
   const end = useRef<HTMLDivElement>(null);
   const restoredSession = useRef(false);
+  const customerTypingActive = useRef(false);
+  const customerTypingTimer = useRef<number | null>(null);
+  const customerTypingHeartbeat = useRef<number | null>(null);
 
   const add = (role: Message["role"], text: string) => {
     setMessages((current) => [...current, { id: createId(), role, text, timestamp: Date.now() }]);
@@ -48,8 +51,52 @@ export default function InjiAI() {
     }
   }
 
+  function stopCustomerTyping() {
+    if (customerTypingTimer.current) window.clearTimeout(customerTypingTimer.current);
+    if (customerTypingHeartbeat.current) window.clearInterval(customerTypingHeartbeat.current);
+    customerTypingTimer.current = null;
+    customerTypingHeartbeat.current = null;
+    if (customerTypingActive.current && session.current && status === "active") {
+      customerTypingActive.current = false;
+      void fetch("/api/inji/message", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ sessionId: session.current, action: "typing", isTyping: false }),
+      });
+    } else {
+      customerTypingActive.current = false;
+    }
+  }
+
+  function startCustomerTyping() {
+    if (!session.current || status !== "active") return;
+    if (!customerTypingActive.current) {
+      customerTypingActive.current = true;
+      void fetch("/api/inji/message", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ sessionId: session.current, action: "typing", isTyping: true }),
+      });
+      customerTypingHeartbeat.current = window.setInterval(() => {
+        if (!customerTypingActive.current || !session.current || status !== "active") return;
+        void fetch("/api/inji/message", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ sessionId: session.current, action: "typing", isTyping: true }),
+        });
+      }, 1000);
+    }
+    if (customerTypingTimer.current) window.clearTimeout(customerTypingTimer.current);
+    customerTypingTimer.current = window.setTimeout(stopCustomerTyping, 1700);
+  }
+
   function resetConversation() {
     if (timer.current) clearTimeout(timer.current);
+    if (customerTypingTimer.current) window.clearTimeout(customerTypingTimer.current);
+    if (customerTypingHeartbeat.current) window.clearInterval(customerTypingHeartbeat.current);
+    customerTypingTimer.current = null;
+    customerTypingHeartbeat.current = null;
+    customerTypingActive.current = false;
     clearStoredSession();
     session.current = createId("session");
     try { localStorage.setItem(sessionKey, session.current); } catch { /* storage is optional */ }
@@ -81,7 +128,7 @@ export default function InjiAI() {
       session.current = createId("session");
       setWelcome(true);
     }
-    return () => { if (timer.current) clearTimeout(timer.current); };
+    return () => { if (timer.current) clearTimeout(timer.current); if (customerTypingTimer.current) window.clearTimeout(customerTypingTimer.current); if (customerTypingHeartbeat.current) window.clearInterval(customerTypingHeartbeat.current); };
   }, []);
 
   useEffect(() => {
@@ -133,7 +180,7 @@ export default function InjiAI() {
     };
 
     void poll();
-    const interval = window.setInterval(() => void poll(), 1000);
+    const interval = window.setInterval(() => void poll(), 2500);
     return () => { cancelled = true; clearInterval(interval); };
   }, [open, status]);
 
@@ -160,6 +207,7 @@ export default function InjiAI() {
     if (phone && !/^[+()\-\s\d]{7,25}$/.test(phone)) return setLeadError("Enter a valid contact number.");
 
     setLeadError("");
+    stopCustomerTyping();
     setStatus("transferring");
 
     try {
@@ -189,6 +237,7 @@ export default function InjiAI() {
 
   async function confirmEndChat() {
     if (ending) return;
+    stopCustomerTyping();
     setEnding(true);
     try {
       const response = await fetch("/api/inji/close", {
@@ -354,7 +403,7 @@ export default function InjiAI() {
           </div>
 
           <form className="inji-input" onSubmit={(event) => { event.preventDefault(); send(); }}>
-            <input value={input} onChange={(event) => setInput(event.target.value)} placeholder={status === "active" ? "Message the Formiva Team…" : "Ask Inji…"} aria-label="Chat message" disabled={disabled} />
+            <input value={input} onChange={(event) => { setInput(event.target.value); if (status === "active" && event.target.value.trim()) startCustomerTyping(); else if (status === "active") stopCustomerTyping(); }} onBlur={() => { if (status === "active") stopCustomerTyping(); }} placeholder={status === "active" ? "Message the Formiva Team…" : "Ask Inji…"} aria-label="Chat message" disabled={disabled} />
             <button type="submit" aria-label="Send message" disabled={disabled}><Send size={17} /></button>
           </form>
         </section>

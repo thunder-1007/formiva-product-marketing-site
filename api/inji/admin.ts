@@ -88,6 +88,8 @@ export default async function handler(request: ApiRequest, response: ApiResponse
       session.agentName = requestedAgentName.slice(0, 80) || "Formiva Team";
       session.isTyping = false;
       session.typingUntil = undefined;
+      session.customerTyping = false;
+      session.customerTypingUntil = undefined;
       await saveSession(session);
 
       try {
@@ -123,6 +125,8 @@ export default async function handler(request: ApiRequest, response: ApiResponse
       });
       session.isTyping = false;
       session.typingUntil = undefined;
+      session.customerTyping = false;
+      session.customerTypingUntil = undefined;
       await saveSession(session);
 
       return response.json({ ok: true, session });
@@ -132,6 +136,8 @@ export default async function handler(request: ApiRequest, response: ApiResponse
       session.status = "closed";
       session.isTyping = false;
       session.typingUntil = undefined;
+      session.customerTyping = false;
+      session.customerTypingUntil = undefined;
       session.closedAt = Date.now();
       await saveSession(session);
 
