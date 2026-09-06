@@ -1,9 +1,16 @@
 import { type ApiRequest, type ApiResponse } from "../_types.js";
-import { bodyObject, headerValue, methodNotAllowed, telegramConfig, telegramRequest } from "./common.js";
-import { claimTelegramUpdate, getSession, getTelegramMessageSession, saveSession } from "./storage.js";
+import { bodyObject, headerValue, methodNotAllowed, telegramConfig, telegramRequest, validSessionId } from "./common.js";
+import { claimTelegramUpdate, getSession, getTelegramMessageSession, saveSession, saveTelegramMessage } from "./storage.js";
 
-type TelegramUpdate = { update_id?: number; callback_query?: { id?: string; data?: string; from?: { id?: number; first_name?: string; last_name?: string }; message?: { message_id?: number } }; message?: { message_id?: number; text?: string; chat?: { id?: number }; from?: { first_name?: string; last_name?: string }; reply_to_message?: { message_id?: number } } };
+type TelegramUpdate = { update_id?: number; callback_query?: { id?: string; data?: string; from?: { id?: number; first_name?: string; last_name?: string }; message?: { message_id?: number } }; message?: { message_id?: number; text?: string; chat?: { id?: number }; from?: { first_name?: string; last_name?: string }; reply_to_message?: { message_id?: number; text?: string; caption?: string } } };
 const agentDisplayName = (from?: { first_name?: string; last_name?: string }) => [from?.first_name, from?.last_name].filter(Boolean).join(" ").slice(0, 80) || "Formiva Team";
+async function sessionForReply(replyTo?: { message_id?: number; text?: string; caption?: string }) {
+  if (!replyTo || typeof replyTo.message_id !== "number") return null;
+  const mappedSessionId = await getTelegramMessageSession(replyTo.message_id);
+  if (mappedSessionId) return mappedSessionId;
+  const sessionMatch = (replyTo.text || replyTo.caption || "").match(/(?:Session:\s*|<code>)([A-Za-z0-9_-]{8,128})/i);
+  return sessionMatch && validSessionId(sessionMatch[1]) ? sessionMatch[1] : null;
+}
 export default async function handler(request: ApiRequest, response: ApiResponse) {
   if (request.method !== "POST") return methodNotAllowed(response, ["POST"]);
   let telegram; try { telegram = telegramConfig(); } catch { return response.status(503).json({ ok: false, error: "webhook_not_configured" }); }
@@ -26,9 +33,9 @@ export default async function handler(request: ApiRequest, response: ApiResponse
       return response.json({ ok: true });
     }
     const message = update.message;
-    if (!message?.text || String(message.chat?.id) !== String(telegram.chatId) || typeof message.reply_to_message?.message_id !== "number") return response.json({ ok: true });
-    const sessionId = await getTelegramMessageSession(message.reply_to_message.message_id); const session = sessionId ? await getSession(sessionId) : null;
-    if (session && session.status === "active" && !session.messages.some(item => item.id === `telegram-${message.message_id}`)) { session.messages.push({ id: `telegram-${message.message_id}`, role: "human", text: message.text.slice(0, 2000), timestamp: Date.now(), senderName: agentDisplayName(message.from) }); session.agentName ||= agentDisplayName(message.from); session.isTyping = false; await saveSession(session); }
+    if (!message?.text || typeof message.message_id !== "number" || String(message.chat?.id) !== String(telegram.chatId) || typeof message.reply_to_message?.message_id !== "number") return response.json({ ok: true });
+    const sessionId = await sessionForReply(message.reply_to_message); const session = sessionId ? await getSession(sessionId) : null;
+    if (session && session.status === "active" && !session.messages.some(item => item.id === `telegram-${message.message_id}`)) { session.messages.push({ id: `telegram-${message.message_id}`, role: "human", text: message.text.slice(0, 2000), timestamp: Date.now(), senderName: agentDisplayName(message.from) }); session.agentName ||= agentDisplayName(message.from); session.isTyping = false; await saveSession(session); await saveTelegramMessage(session.sessionId, message.message_id); }
     response.json({ ok: true });
   } catch { response.status(503).json({ ok: false, error: "webhook_unavailable" }); }
 }
