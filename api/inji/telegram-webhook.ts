@@ -5,11 +5,11 @@ import { claimTelegramUpdate, getSession, getTelegramMessageSession, saveSession
 type TelegramUpdate = { update_id?: number; callback_query?: { id?: string; data?: string; from?: { id?: number; first_name?: string; last_name?: string }; message?: { message_id?: number } }; message?: { message_id?: number; text?: string; chat?: { id?: number }; from?: { first_name?: string; last_name?: string }; reply_to_message?: { message_id?: number; text?: string; caption?: string } } };
 const agentDisplayName = (from?: { first_name?: string; last_name?: string }) => [from?.first_name, from?.last_name].filter(Boolean).join(" ").slice(0, 80) || "Formiva Team";
 async function sessionForReply(replyTo?: { message_id?: number; text?: string; caption?: string }) {
-  if (!replyTo || typeof replyTo.message_id !== "number") return null;
+  if (!replyTo || typeof replyTo.message_id !== "number") return { sessionId: null, source: "missing_reply" as const };
   const mappedSessionId = await getTelegramMessageSession(replyTo.message_id);
-  if (mappedSessionId) return mappedSessionId;
-  const sessionMatch = (replyTo.text || replyTo.caption || "").match(/(?:Session:\s*|<code>)([A-Za-z0-9_-]{8,128})/i);
-  return sessionMatch && validSessionId(sessionMatch[1]) ? sessionMatch[1] : null;
+  if (mappedSessionId) return { sessionId: mappedSessionId, source: "message_mapping" as const };
+  const sessionMatch = (replyTo.text || replyTo.caption || "").match(/(?:Session:\s*|<code>)?\b(session-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\b/i);
+  return sessionMatch && validSessionId(sessionMatch[1]) ? { sessionId: sessionMatch[1], source: "message_text" as const } : { sessionId: null, source: "unresolved" as const };
 }
 export default async function handler(request: ApiRequest, response: ApiResponse) {
   if (request.method !== "POST") return methodNotAllowed(response, ["POST"]);
@@ -34,8 +34,9 @@ export default async function handler(request: ApiRequest, response: ApiResponse
     }
     const message = update.message;
     if (!message?.text || typeof message.message_id !== "number" || String(message.chat?.id) !== String(telegram.chatId) || typeof message.reply_to_message?.message_id !== "number") return response.json({ ok: true });
-    const sessionId = await sessionForReply(message.reply_to_message); const session = sessionId ? await getSession(sessionId) : null;
-    if (session && session.status === "active" && !session.messages.some(item => item.id === `telegram-${message.message_id}`)) { session.messages.push({ id: `telegram-${message.message_id}`, role: "human", text: message.text.slice(0, 2000), timestamp: Date.now(), senderName: agentDisplayName(message.from) }); session.agentName ||= agentDisplayName(message.from); session.isTyping = false; await saveSession(session); await saveTelegramMessage(session.sessionId, message.message_id); }
+    const resolution = await sessionForReply(message.reply_to_message); const session = resolution.sessionId ? await getSession(resolution.sessionId) : null;
+    if (!session || session.status !== "active") { console.info("[inji] telegram reply not persisted", { messageId: message.message_id, replyToMessageId: message.reply_to_message.message_id, resolution: resolution.source, sessionStatus: session?.status || "missing" }); return response.json({ ok: true }); }
+    if (!session.messages.some(item => item.id === `telegram-${message.message_id}`)) { session.messages.push({ id: `telegram-${message.message_id}`, role: "human", text: message.text.slice(0, 2000), timestamp: Date.now(), senderName: agentDisplayName(message.from) }); session.agentName ||= agentDisplayName(message.from); session.isTyping = false; await saveSession(session); await saveTelegramMessage(session.sessionId, message.message_id); console.info("[inji] telegram reply persisted", { messageId: message.message_id, replyToMessageId: message.reply_to_message.message_id, resolution: resolution.source }); }
     response.json({ ok: true });
   } catch { response.status(503).json({ ok: false, error: "webhook_unavailable" }); }
 }
