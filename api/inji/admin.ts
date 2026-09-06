@@ -1,4 +1,4 @@
-import { type ApiRequest, type ApiResponse } from "./_types.js";
+import { type ApiRequest, type ApiResponse } from "../_types.js";
 import {
   bodyObject,
   MAX_MESSAGE_LENGTH,
