@@ -3,5 +3,6 @@ import App from "./App";
 import "./index.css";
 import "./auth.css";
 import "./readability.css";
+import "./inji.css";
 
 createRoot(document.getElementById("root")!).render(<App />);

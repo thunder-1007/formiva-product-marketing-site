@@ -13,6 +13,7 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  ChevronUp,
   CircleHelp,
   ClipboardCheck,
   Cloud,
@@ -48,6 +49,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
+import InjiAI from "./components/InjiAI";
 
 const iconMap = {
   company: Building2,
@@ -261,7 +263,7 @@ function Footer() {
 
 function SiteShell({ children }: { children: ReactNode }) {
   useReveal();
-  return <><Header /><main>{children}</main><Footer /></>;
+  return <><Header /><main>{children}</main><Footer /><InjiAI /></>;
 }
 
 function SectionLabel({ children }: { children: ReactNode }) { return <span className="eyebrow"><span className="eyebrow-line" />{children}</span>; }
@@ -497,10 +499,25 @@ function NotFoundPage() {
   );
 }
 
+
+function BackToTop() {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const updateVisibility = () => setVisible(window.scrollY > 420);
+    updateVisibility();
+    window.addEventListener("scroll", updateVisibility, { passive: true });
+    return () => window.removeEventListener("scroll", updateVisibility);
+  }, []);
+
+  if (!visible) return null;
+
+  return <button className="back-to-top" type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label="Back to top" title="Back to top"><ChevronUp size={18} /></button>;
+}
 function App() {
   const [location] = useLocation();
 
-  return <div className="route-transition" key={location}><Switch><Route path="/" component={Home} /><Route path="/pricing" component={PricingPage} /><Route path="/login"><AuthPage mode="login" /></Route><Route path="/signup"><AuthPage mode="signup" /></Route><Route path="/legal/privacy"><LegalPage title="Privacy, with intent." copy="A clear view of the information Formiva collects, why it exists and how we design around responsible handling." /></Route><Route path="/legal/terms"><LegalPage title="Terms that stay readable." copy="The simple version of how Formiva, Vishyx Techie and our customers work together." /></Route><Route path="/legal/security"><LegalPage title="Quality & security are product features." copy="Trust is not a footer claim. It is designed into the flow, the data model and the human review path." /></Route>{Object.entries(pageData).filter(([path]) => path !== "/pricing").map(([path, data]) => <Route key={path} path={path}><ContentPage data={data} /></Route>)}<Route component={NotFoundPage} /></Switch></div>;
+  return <><BackToTop /><div className="route-transition" key={location}><Switch><Route path="/" component={Home} /><Route path="/pricing" component={PricingPage} /><Route path="/login"><AuthPage mode="login" /></Route><Route path="/signup"><AuthPage mode="signup" /></Route><Route path="/legal/privacy"><LegalPage title="Privacy, with intent." copy="A clear view of the information Formiva collects, why it exists and how we design around responsible handling." /></Route><Route path="/legal/terms"><LegalPage title="Terms that stay readable." copy="The simple version of how Formiva, Vishyx Techie and our customers work together." /></Route><Route path="/legal/security"><LegalPage title="Quality & security are product features." copy="Trust is not a footer claim. It is designed into the flow, the data model and the human review path." /></Route>{Object.entries(pageData).filter(([path]) => path !== "/pricing").map(([path, data]) => <Route key={path} path={path}><ContentPage data={data} /></Route>)}<Route component={NotFoundPage} /></Switch></div></>;
 }
 
 export default App;
