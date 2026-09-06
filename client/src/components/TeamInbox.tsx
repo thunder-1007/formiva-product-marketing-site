@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Check, ChevronRight, CircleUserRound, LogOut, RefreshCw, Send, Sparkles, X } from "lucide-react";
 import { Link } from "wouter";
+import "./TeamInbox.css";
 
 type Message = {
   id: string;
@@ -63,6 +64,7 @@ export default function TeamInbox() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const typingTimer = useRef<number | null>(null);
+  const selectedRequestSeq = useRef(0);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -98,13 +100,18 @@ export default function TeamInbox() {
 
   async function fetchSelected() {
     if (!adminKey || !selectedId) return;
+    const requestSeq = ++selectedRequestSeq.current;
+    const requestSessionId = selectedId;
     try {
-      const response = await fetch(`/api/inji/admin?sessionId=${encodeURIComponent(selectedId)}`, { headers: { "x-inji-admin-key": adminKey }, cache: "no-store" });
+      const response = await fetch(`/api/inji/admin?sessionId=${encodeURIComponent(requestSessionId)}`, { headers: { "x-inji-admin-key": adminKey }, cache: "no-store" });
       const data = await response.json() as { ok?: boolean; session?: Session; error?: string };
       if (!response.ok || !data.ok || !data.session) throw new Error(data.error || "Conversation unavailable");
+      // Ignore an older poll response that arrived after a user action changed the conversation.
+      if (requestSeq !== selectedRequestSeq.current || requestSessionId !== selectedId) return;
       setSelected(data.session);
       setSessions((current) => current.map((s) => s.sessionId === data.session!.sessionId ? data.session! : s));
     } catch (err) {
+      if (requestSeq !== selectedRequestSeq.current || requestSessionId !== selectedId) return;
       setError(err instanceof Error ? err.message : "Unable to load conversation");
     }
   }
@@ -150,6 +157,7 @@ export default function TeamInbox() {
 
   async function takeChat() {
     if (!selected || busy) return;
+    ++selectedRequestSeq.current;
     setBusy(true);
     setError("");
     try {
@@ -167,6 +175,7 @@ export default function TeamInbox() {
 
   async function closeChat() {
     if (!selected || busy) return;
+    ++selectedRequestSeq.current;
     setBusy(true);
     try {
       const response = await fetch("/api/inji/admin", { method: "POST", headers, body: JSON.stringify({ action: "close", sessionId: selected.sessionId }) });
@@ -202,6 +211,7 @@ export default function TeamInbox() {
     event?.preventDefault();
     const text = input.trim();
     if (!text || !selected || selected.status !== "active" || busy) return;
+    ++selectedRequestSeq.current;
     if (typingTimer.current) window.clearTimeout(typingTimer.current);
     void setTyping(false);
     setInput("");
