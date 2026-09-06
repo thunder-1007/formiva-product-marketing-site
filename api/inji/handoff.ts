@@ -1,44 +1,4 @@
 import { type ApiRequest, type ApiResponse } from "../_types.js";
-import {
-  bodyObject,
-  MAX_QUESTION_LENGTH,
-  methodNotAllowed,
-  sendTelegramNotification,
-  validConversation,
-  validSessionId,
-} from "./common.js";
+import { bodyObject, MAX_QUESTION_LENGTH, methodNotAllowed, sendHandoff, validSessionId } from "./common.js";
 import { allowHandoff, deleteSession, newSession, saveSession } from "./storage.js";
-
-export default async function handler(request: ApiRequest, response: ApiResponse) {
-  if (request.method !== "POST") {
-    methodNotAllowed(response, ["POST"]);
-    return;
-  }
-
-  const body = bodyObject(request);
-  const sessionId = body?.sessionId;
-  const question = body?.question;
-  const conversation = body?.conversation;
-  if (!validSessionId(sessionId) || typeof question !== "string" || question.trim().length === 0 || question.length > MAX_QUESTION_LENGTH || !validConversation(conversation)) {
-    response.status(400).json({ ok: false, error: "invalid_request" });
-    return;
-  }
-
-  try {
-    if (!(await allowHandoff(sessionId))) {
-      response.status(429).json({ ok: false, error: "rate_limited" });
-      return;
-    }
-    const session = newSession(sessionId, question.trim());
-    await saveSession(session);
-    await sendTelegramNotification(session, conversation);
-    response.json({ ok: true, status: "waiting" });
-  } catch {
-    try {
-      await deleteSession(sessionId);
-    } catch {
-      // The client still receives the same generic failure response.
-    }
-    response.json({ ok: false, error: "handoff_unavailable" });
-  }
-}
+export default async function handler(request: ApiRequest, response: ApiResponse) { if (request.method !== "POST") return methodNotAllowed(response, ["POST"]); const body = bodyObject(request), details = body?.details as Record<string, unknown> | undefined; const question = body?.question, sessionId = body?.sessionId; const name = typeof details?.name === "string" ? details.name.trim() : "", company = typeof details?.company === "string" ? details.company.trim() : "", phone = typeof details?.phone === "string" ? details.phone.trim() : "", email = typeof details?.email === "string" ? details.email.trim() : ""; if (!validSessionId(sessionId) || typeof question !== "string" || !question.trim() || question.length > MAX_QUESTION_LENGTH || !name || (!phone && !email) || (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) || (phone && !/^[+()\-\s\d]{7,25}$/.test(phone))) return response.status(400).json({ ok: false, error: "invalid_request" }); try { if (!(await allowHandoff(sessionId))) return response.status(429).json({ ok: false, error: "rate_limited" }); const session = newSession(sessionId, question.trim(), { visitorName: name.slice(0, 120), company: company.slice(0, 160), phone, email: email.slice(0, 254) }); await saveSession(session); await sendHandoff(session); response.json({ ok: true, status: "waiting" }); } catch { try { await deleteSession(sessionId); } catch { /* no-op */ } response.status(503).json({ ok: false, error: "handoff_unavailable" }); } }

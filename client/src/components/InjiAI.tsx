@@ -1,268 +1,44 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
-import { ArrowUpRight, Bot, Send, Sparkles, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Bot, Send, Sparkles, X } from "lucide-react";
 import { createPortal } from "react-dom";
-import { Link } from "wouter";
 import { getInjiResponse } from "./injiKnowledge";
 
-type ContextAction = {
-  label: string;
-  href: string;
-};
-
-type Message = {
-  role: "user" | "assistant";
-  text: string;
-  action?: ContextAction;
-  handoffQuestion?: string;
-  teamResponse?: boolean;
-};
-
-type HandoffStatus = "idle" | "sending" | "waiting" | "expired" | "error";
-
-const welcomeSeenKey = "formiva_inji_welcome_seen";
-const sessionIdKey = "formiva_inji_session_id";
-const pendingHandoffKey = "formiva_inji_pending_handoff";
-
-const suggestedQuestions = [
-  "What is Formiva?",
-  "How does CaseFlow work?",
-  "How does AI work?",
-  "Employee onboarding",
-  "Features",
-  "Pricing",
-  "Talk to the team",
-];
-
-function createSessionId() {
-  const cryptoApi = typeof globalThis.crypto !== "undefined" ? globalThis.crypto : undefined;
-  if (cryptoApi?.randomUUID) return cryptoApi.randomUUID();
-  if (cryptoApi?.getRandomValues) {
-    const bytes = new Uint8Array(16);
-    cryptoApi.getRandomValues(bytes);
-    return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
-  }
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
-}
+type Message = { id: string; role: "user" | "assistant" | "human"; text: string; timestamp: number; agentName?: string };
+type Status = "idle" | "lead_form" | "transferring" | "waiting" | "active" | "closed" | "expired";
+const welcomeKey = "formiva_inji_welcome_seen", sessionKey = "formiva_inji_session_id", handoffKey = "formiva_inji_pending_handoff";
+const suggestions = ["What is Formiva?", "How does CaseFlow work?", "How does AI work?", "Employee onboarding", "Features", "Pricing", "Talk to the team"];
+const id = (prefix = "local") => `${prefix}-${globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`}`;
 
 export default function InjiAI() {
-  const [open, setOpen] = useState(false);
-  const [welcomeVisible, setWelcomeVisible] = useState(false);
-  const [isResponding, setIsResponding] = useState(false);
-  const [input, setInput] = useState("");
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const responseTimerRef = useRef<number | null>(null);
-  const [messages, setMessages] = useState<Message[]>([{ role: "assistant", text: "Hi! I'm Inji. How can I help you learn about Formiva?" }]);
-  const [handoffStatus, setHandoffStatus] = useState<HandoffStatus>("idle");
-  const sessionIdRef = useRef<string | null>(null);
-
+  const [open, setOpen] = useState(false), [welcome, setWelcome] = useState(false), [input, setInput] = useState(""), [responding, setResponding] = useState(false);
+  const [status, setStatus] = useState<Status>("idle"), [handoffQuestion, setHandoffQuestion] = useState(""), [agentName, setAgentName] = useState(""), [typing, setTyping] = useState(false);
+  const [lead, setLead] = useState({ name: "", company: "", phone: "", email: "" }), [leadError, setLeadError] = useState("");
+  const [feedback, setFeedback] = useState({ rating: 0, text: "", submitting: false, submitted: false, error: "" });
+  const [messages, setMessages] = useState<Message[]>([{ id: "welcome", role: "assistant", text: "Hi! I'm Inji. How can I help you learn about Formiva?", timestamp: 0 }]);
+  const session = useRef(""), timer = useRef<number | null>(null), end = useRef<HTMLDivElement>(null);
+  const add = (role: Message["role"], text: string) => setMessages(current => [...current, { id: id(), role, text, timestamp: Date.now() }]);
+  useEffect(() => { try { setWelcome(localStorage.getItem(welcomeKey) !== "true"); session.current = localStorage.getItem(sessionKey) || id("session"); localStorage.setItem(sessionKey, session.current); if (localStorage.getItem(handoffKey) === session.current) setStatus("waiting"); } catch { session.current = id("session"); setWelcome(true); } return () => { if (timer.current) clearTimeout(timer.current); }; }, []);
+  useEffect(() => { end.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }); }, [messages, status, typing, responding]);
   useEffect(() => {
-    try {
-      if (window.localStorage.getItem(welcomeSeenKey) !== "true") setWelcomeVisible(true);
-      const storedSessionId = window.localStorage.getItem(sessionIdKey);
-      sessionIdRef.current = storedSessionId || createSessionId();
-      if (window.localStorage.getItem(pendingHandoffKey) === sessionIdRef.current) setHandoffStatus("waiting");
-    } catch {
-      setWelcomeVisible(true);
-      sessionIdRef.current = createSessionId();
-    }
-
-    return () => {
-      if (responseTimerRef.current !== null) window.clearTimeout(responseTimerRef.current);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!open || handoffStatus !== "waiting" || !sessionIdRef.current) return;
-    let stopped = false;
-
-    const pollForReply = async () => {
-      try {
-        const response = await fetch(`/api/inji/reply?sessionId=${encodeURIComponent(sessionIdRef.current!)}`);
-        if (!response.ok || stopped) return;
-        const result = await response.json() as { status?: string; reply?: string };
-        if (result.status === "replied" && result.reply) {
-          stopped = true;
-          setHandoffStatus("idle");
-          removePendingHandoff();
-          setIsResponding(true);
-          responseTimerRef.current = window.setTimeout(() => {
-            setMessages((current) => [...current, { role: "assistant", text: result.reply!, teamResponse: true }]);
-            setIsResponding(false);
-            responseTimerRef.current = null;
-          }, 500);
-        } else if (result.status === "expired") {
-          stopped = true;
-          setHandoffStatus("expired");
-          removePendingHandoff();
-          setMessages((current) => [...current, { role: "assistant", text: "Inji's previous team request has expired. You can send the question again." }]);
-        }
-      } catch {
-        // Keep polling while the handoff is pending; the UI stays usable offline.
-      }
-    };
-
-    void pollForReply();
-    const interval = window.setInterval(() => { void pollForReply(); }, 7000);
-    return () => {
-      stopped = true;
-      window.clearInterval(interval);
-    };
-  }, [handoffStatus, open]);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  }, [messages, isResponding]);
-
-  function markWelcomeSeen() {
-    setWelcomeVisible(false);
-    try {
-      window.localStorage.setItem(welcomeSeenKey, "true");
-    } catch {
-      // Continue without persistence when storage is unavailable.
-    }
-  }
-
-  function openChat() {
-    markWelcomeSeen();
-    setOpen(true);
-  }
-
-  function removePendingHandoff() {
-    try {
-      window.localStorage.removeItem(pendingHandoffKey);
-    } catch {
-      // Continue when storage is unavailable.
-    }
-  }
-
-  function savePendingHandoff(sessionId: string) {
-    try {
-      window.localStorage.setItem(pendingHandoffKey, sessionId);
-    } catch {
-      // Continue when storage is unavailable.
-    }
-  }
-
-  async function sendToFormivaTeam(question: string) {
-    if (!question || isResponding || handoffStatus === "sending" || handoffStatus === "waiting") return;
-    const sessionId = sessionIdRef.current || createSessionId();
-    sessionIdRef.current = sessionId;
-    setHandoffStatus("sending");
-    setIsResponding(true);
-
-    let sent = false;
-    try {
-      const response = await fetch("/api/inji/handoff", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          sessionId,
-          question,
-          conversation: messages.map((message) => ({ role: message.role, content: message.text })),
-        }),
-      });
-      const result = await response.json() as { ok?: boolean };
-      sent = response.ok && result.ok === true;
-    } catch {
-      sent = false;
-    }
-
-    await new Promise((resolve) => window.setTimeout(resolve, 500));
-    if (sent) {
-      savePendingHandoff(sessionId);
-      setHandoffStatus("waiting");
-      setMessages((current) => [...current, { role: "assistant", text: "I've sent your question to the Formiva team. I'll show their response here when it arrives." }]);
-    } else {
-      setHandoffStatus("error");
-      setMessages((current) => [...current, { role: "assistant", text: "I couldn't send that to the Formiva team right now. Please try again, or use the Contact page.", action: { label: "Contact Formiva", href: "/company/contact" } }]);
-    }
-    setIsResponding(false);
-  }
-
-  function sendMessage(suggestedQuestion?: string) {
-    const question = (suggestedQuestion ?? input).trim();
-    if (!question || isResponding) return;
-
-    setMessages((current) => [
-      ...current,
-      { role: "user", text: question }
-    ]);
-    setInput("");
-    setIsResponding(true);
-    responseTimerRef.current = window.setTimeout(() => {
-      const response = getInjiResponse(question);
-      setMessages((current) => [...current, { role: "assistant", text: response.answer, action: response.action, handoffQuestion: response.id === "fallback" ? question : undefined }]);
-      setIsResponding(false);
-      responseTimerRef.current = null;
-    }, 650);
-  }
-
-  function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-    if (event.key === "Enter") sendMessage();
-  }
-
-  return createPortal(
-    <>
-      {welcomeVisible && !open && (
-        <aside className="inji-welcome-teaser" aria-label="Inji welcome">
-          <button type="button" className="inji-teaser-copy" onClick={openChat}>
-            <span>Hi! I'm Inji</span>
-            <strong>Need help exploring Formiva?</strong>
-          </button>
-          <button type="button" className="inji-teaser-action" onClick={openChat}>Ask Inji</button>
-          <button type="button" className="inji-teaser-dismiss" onClick={markWelcomeSeen} aria-label="Dismiss Inji welcome">×</button>
-        </aside>
-      )}
-
-      {open && (
-        <section className="inji-chat" aria-label="Inji chat assistant">
-          <div className="inji-header">
-            <div className="inji-title">
-              <div className="inji-avatar"><Bot size={18} /><Sparkles className="inji-avatar-spark" size={11} /></div>
-              <div><strong>Inji</strong><span>Formiva's AI assistant</span></div>
-            </div>
-            <button className="inji-close" onClick={() => setOpen(false)} aria-label="Close Inji" type="button">
-              <X size={19} />
-            </button>
-          </div>
-
-          <div className="inji-messages" aria-live="polite">
-            {messages.map((message, index) => (
-              <div key={`${message.role}-${index}`} className={`inji-message ${message.role === "user" ? "inji-user" : "inji-bot"} ${index === 0 ? "inji-welcome" : ""}`}>
-                {message.teamResponse ? <><strong>Formiva Team:</strong><br />{message.text}</> : message.text}
-                {message.action && <Link className="inji-action" href={message.action.href}>{message.action.label}<ArrowUpRight size={14} /></Link>}
-                {message.handoffQuestion && <button className="inji-action inji-action-button" type="button" onClick={() => void sendToFormivaTeam(message.handoffQuestion!)} disabled={isResponding || handoffStatus === "sending" || handoffStatus === "waiting"}>Ask the Formiva Team<ArrowUpRight size={14} /></button>}
-              </div>
-            ))}
-            {isResponding && (
-              <div className="inji-message inji-bot inji-typing" role="status" aria-label="Inji is typing">
-                <span>Inji</span><span className="inji-typing-dots" aria-hidden="true"><i /><i /><i /></span>
-              </div>
-            )}
-            {handoffStatus === "waiting" && <div className="inji-handoff-status" role="status">Waiting for Formiva team...</div>}
-            {messages.length === 1 && (
-              <div className="inji-suggestions" aria-label="Suggested questions">
-                <span>Try asking</span>
-                {suggestedQuestions.map((question) => (
-                  <button key={question} type="button" onClick={() => sendMessage(question)} disabled={isResponding}>{question}</button>
-                ))}
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          <form className="inji-input" onSubmit={(event) => { event.preventDefault(); sendMessage(); }}>
-            <input value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={handleKeyDown} placeholder="Ask Inji..." aria-label="Ask Inji" disabled={isResponding} />
-            <button type="submit" aria-label="Send message" disabled={isResponding}><Send size={17} /></button>
-          </form>
-        </section>
-      )}
-
-      <button className={`inji-button ${open ? "inji-button-open" : ""}`} onClick={() => { if (open) setOpen(false); else openChat(); }} aria-label={open ? "Close Inji" : "Ask Inji"} type="button">
-        {open ? <X size={22} /> : <Bot size={22} />}
-        {!open && <span>Ask Inji</span>}
-      </button>
-    </>,
-    document.body,
-  );
+    if (!open || !["waiting", "active", "closed"].includes(status)) return;
+    let cancelled = false;
+    const poll = async () => { try { const response = await fetch(`/api/inji/reply?sessionId=${encodeURIComponent(session.current)}`); if (!response.ok || cancelled) return; const data = await response.json() as { status?: Status; messages?: Message[]; agentName?: string; isTyping?: boolean; feedbackSubmitted?: boolean }; if (!data.status || cancelled) return; if (["active", "closed", "expired"].includes(data.status)) setStatus(data.status); if (data.agentName) setAgentName(data.agentName); setTyping(Boolean(data.isTyping) && data.status === "active"); if (data.feedbackSubmitted) setFeedback(current => ({ ...current, submitted: true })); const remoteMessages = data.messages; if (remoteMessages) setMessages(current => { const merged = new Map(current.map(m => [m.id, m])); remoteMessages.forEach(m => merged.set(m.id, { ...m, agentName: data.agentName || m.agentName })); return Array.from(merged.values()).sort((a, b) => a.timestamp - b.timestamp); }); } catch { /* next poll retries */ } };
+    void poll(); const interval = window.setInterval(() => void poll(), 2500); return () => { cancelled = true; clearInterval(interval); };
+  }, [open, status]);
+  const seen = () => { setWelcome(false); try { localStorage.setItem(welcomeKey, "true"); } catch { /* no storage */ } };
+  function beginHandoff(question: string) { setHandoffQuestion(question); setStatus("lead_form"); add("assistant", "Let's connect you with the Formiva Team\n\nI can connect you with a member of our team. Just a few details first."); }
+  async function submitLead(event: React.FormEvent) { event.preventDefault(); const name = lead.name.trim(), email = lead.email.trim(), phone = lead.phone.trim(); if (!name) return setLeadError("Please enter your name."); if (!phone && !email) return setLeadError("Add a contact number or business email."); if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return setLeadError("Enter a valid business email."); if (phone && !/^[+()\-\s\d]{7,25}$/.test(phone)) return setLeadError("Enter a valid contact number."); setLeadError(""); setStatus("transferring"); try { const response = await fetch("/api/inji/handoff", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ sessionId: session.current, question: handoffQuestion, details: { name, company: lead.company.trim(), email, phone }, conversation: messages.map(m => ({ role: m.role === "human" ? "assistant" : m.role, content: m.text })) }) }); if (!response.ok) throw new Error(); try { localStorage.setItem(handoffKey, session.current); } catch { /* no storage */ } add("assistant", "Transferring you to a member of the Formiva Team…"); setStatus("waiting"); } catch { setStatus("lead_form"); setLeadError("We couldn't connect you right now. Please try again."); } }
+  async function submitFeedback() { if (!feedback.rating || feedback.submitting) return; setFeedback(current => ({ ...current, submitting: true, error: "" })); try { const response = await fetch("/api/inji/feedback", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ sessionId: session.current, rating: feedback.rating, feedback: feedback.text }) }); if (!response.ok) throw new Error(); setFeedback(current => ({ ...current, submitting: false, submitted: true })); } catch { setFeedback(current => ({ ...current, submitting: false, error: "We couldn't submit your feedback. Please try again." })); } }
+  function send(question = input) { const text = question.trim(); if (!text || responding || ["lead_form", "transferring", "waiting", "closed"].includes(status)) return; setInput(""); if (status === "active") { const messageId = id("visitor"); setMessages(current => [...current, { id: messageId, role: "user", text, timestamp: Date.now() }]); void fetch("/api/inji/message", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ sessionId: session.current, message: text, messageId }) }); return; } add("user", text); setResponding(true); timer.current = window.setTimeout(() => { const answer = getInjiResponse(text); add("assistant", answer.answer); if (answer.id === "fallback") beginHandoff(text); setResponding(false); timer.current = null; }, 650); }
+  const disabled = responding || ["lead_form", "transferring", "waiting", "closed"].includes(status);
+  return createPortal(<>
+    {welcome && !open && <aside className="inji-welcome-teaser" aria-label="Inji welcome"><button type="button" className="inji-teaser-copy" onClick={() => { seen(); setOpen(true); }}><span>Hi! I'm Inji</span><strong>Need help exploring Formiva?</strong></button><button type="button" className="inji-teaser-action" onClick={() => { seen(); setOpen(true); }}>Ask Inji</button><button type="button" className="inji-teaser-dismiss" onClick={seen} aria-label="Dismiss Inji welcome">×</button></aside>}
+    {open && <section className="inji-chat" aria-label="Inji chat assistant"><div className="inji-header"><div className="inji-title"><div className="inji-avatar"><Bot size={18}/><Sparkles className="inji-avatar-spark" size={11}/></div><div><strong>Inji</strong><span>Formiva's AI assistant</span></div></div><button className="inji-close" onClick={() => setOpen(false)} aria-label="Close Inji" type="button"><X size={19}/></button></div><div className="inji-messages" aria-live="polite">
+      {messages.map((message, index) => <div key={message.id} className={`inji-message ${message.role === "user" ? "inji-user" : "inji-bot"} ${index === 0 ? "inji-welcome" : ""}`}>{message.role === "human" && <><strong>Formiva Team · {message.agentName || agentName || "Team"}</strong><br/></>}{message.text}</div>)}
+      {status === "lead_form" && <form className="inji-lead-form" onSubmit={submitLead}><strong>Let's connect you with the Formiva Team</strong><p>I can connect you with a member of our team. Just a few details first.</p><label>Your name *<input value={lead.name} onChange={e => setLead({ ...lead, name: e.target.value })} autoComplete="name"/></label><label>Company name<input value={lead.company} onChange={e => setLead({ ...lead, company: e.target.value })} autoComplete="organization"/></label><label>Contact number<input value={lead.phone} onChange={e => setLead({ ...lead, phone: e.target.value })} inputMode="tel" autoComplete="tel"/></label><label>Business email<input value={lead.email} onChange={e => setLead({ ...lead, email: e.target.value })} type="email" autoComplete="email"/></label><small>Your details will be shared with the Formiva Team for this conversation.</small>{leadError && <p className="inji-form-error" role="alert">{leadError}</p>}<button type="submit">Connect me with the team</button></form>}
+      {status === "waiting" && <div className="inji-handoff-status" role="status">Your question and details have been sent to the team. I'll show their response here.<br/><b>Waiting for Formiva Team…</b></div>}{status === "active" && <div className="inji-handoff-status">Connected with {agentName || "the Formiva Team"}</div>}{typing && <div className="inji-agent-typing" role="status">{agentName || "Formiva Team"} is typing…</div>}
+      {status === "closed" && <><div className="inji-handoff-status">Your conversation with the Formiva Team has ended.</div>{feedback.submitted ? <div className="inji-handoff-status">Thanks for your feedback!</div> : <div className="inji-feedback-form"><strong>Thanks for chatting with the Formiva Team!</strong><p>How was your experience?</p><div className="inji-rating" aria-label="Rating">{[1,2,3,4,5].map(r => <button type="button" key={r} aria-pressed={feedback.rating === r} className={feedback.rating === r ? "active" : ""} onClick={() => setFeedback(current => ({ ...current, rating: r }))}>{r}</button>)}</div><label>Tell us how we did (optional)<textarea maxLength={1000} value={feedback.text} onChange={e => setFeedback(current => ({ ...current, text: e.target.value }))}/></label>{feedback.error && <p className="inji-form-error" role="alert">{feedback.error}</p>}<button type="button" disabled={!feedback.rating || feedback.submitting} onClick={() => void submitFeedback()}>{feedback.submitting ? "Submitting…" : "Submit feedback"}</button></div>}</>}
+      {responding && <div className="inji-message inji-bot inji-typing" role="status"><span>Inji</span><span className="inji-typing-dots" aria-hidden="true"><i/><i/><i/></span></div>}{messages.length === 1 && <div className="inji-suggestions" aria-label="Suggested questions"><span>Try asking</span>{suggestions.map(q => <button key={q} type="button" onClick={() => send(q)} disabled={responding}>{q}</button>)}</div>}<div ref={end}/></div><form className="inji-input" onSubmit={e => { e.preventDefault(); send(); }}><input value={input} onChange={e => setInput(e.target.value)} placeholder={status === "active" ? "Message the Formiva Team…" : "Ask Inji…"} aria-label="Chat message" disabled={disabled}/><button type="submit" aria-label="Send message" disabled={disabled}><Send size={17}/></button></form></section>}
+    <button className={`inji-button ${open ? "inji-button-open" : ""}`} onClick={() => open ? setOpen(false) : (seen(), setOpen(true))} aria-label={open ? "Close Inji" : "Ask Inji"} type="button">{open ? <X size={22}/> : <Bot size={22}/>} {!open && <span>Ask Inji</span>}</button>
+  </>, document.body);
 }
