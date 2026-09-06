@@ -1,4 +1,8 @@
-import { type ApiRequest, type ApiResponse } from "../_types.js";
+import {
+  type ApiRequest,
+  type ApiResponse,
+} from "../_types.js";
+
 import {
   bodyObject,
   headerValue,
@@ -10,11 +14,18 @@ import {
 
 import {
   claimTelegramUpdate,
+  deleteActiveChat,
+  getActiveChat,
   getSession,
   getTelegramMessageSession,
+  saveActiveChat,
   saveSession,
   saveTelegramMessage,
 } from "./storage.js";
+
+// ============================================================
+// Telegram types
+// ============================================================
 
 type TelegramUser = {
   id?: number;
@@ -22,20 +33,26 @@ type TelegramUser = {
   last_name?: string;
 };
 
-type TelegramMessage = {
+type TelegramReplyMessage = {
   message_id?: number;
   text?: string;
   caption?: string;
+};
+
+type TelegramMessage = {
+  message_id?: number;
+
+  text?: string;
+  caption?: string;
+
   chat?: {
     id?: number;
     type?: string;
   };
+
   from?: TelegramUser;
-  reply_to_message?: {
-    message_id?: number;
-    text?: string;
-    caption?: string;
-  };
+
+  reply_to_message?: TelegramReplyMessage;
 };
 
 type TelegramUpdate = {
@@ -43,8 +60,11 @@ type TelegramUpdate = {
 
   callback_query?: {
     id?: string;
+
     data?: string;
+
     from?: TelegramUser;
+
     message?: {
       message_id?: number;
     };
@@ -53,74 +73,109 @@ type TelegramUpdate = {
   message?: TelegramMessage;
 };
 
-const agentDisplayName = (from?: TelegramUser) =>
-  [from?.first_name, from?.last_name]
+// ============================================================
+// Agent display name
+// ============================================================
+
+const agentDisplayName = (
+  from?: TelegramUser,
+) =>
+  [
+    from?.first_name,
+    from?.last_name,
+  ]
     .filter(Boolean)
     .join(" ")
-    .slice(0, 80) || "Formiva Team";
+    .slice(0, 80) ||
+  "Formiva Team";
 
-/**
- * Resolve a Formiva session from the Telegram message
- * that the human replied to.
- *
- * We try THREE methods:
- *
- * 1. Redis message_id -> session mapping
- * 2. Session ID embedded in the Telegram message text
- * 3. Session ID embedded in the Telegram caption
- */
-async function resolveSessionFromReply(
-  replyTo?: TelegramMessage["reply_to_message"],
+// ============================================================
+// Resolve customer session from a Telegram Reply
+// ============================================================
+//
+// Priority:
+//
+// 1. Telegram reply_to_message.message_id -> Redis mapping
+// 2. Session ID embedded inside replied message
+// 3. Active chat fallback
+//
+// The fallback is important because your current Telegram
+// updates are arriving without reply_to_message.
+// ============================================================
+
+async function resolveSession(
+  message: TelegramMessage,
+  telegramChatId: string,
 ) {
-  if (!replyTo || typeof replyTo.message_id !== "number") {
-    return {
-      sessionId: null,
-      source: "missing_reply",
-    };
-  }
+  // ----------------------------------------------------------
+  // METHOD 1
+  // Native Telegram Reply -> Redis message mapping
+  // ----------------------------------------------------------
 
-  // ------------------------------------------------------------
-  // METHOD 1: Redis message mapping
-  // ------------------------------------------------------------
+  const replyMessageId =
+    message.reply_to_message?.message_id;
 
-  try {
-    const mappedSessionId = await getTelegramMessageSession(
-      replyTo.message_id,
-    );
+  if (typeof replyMessageId === "number") {
+    const mappedSessionId =
+      await getTelegramMessageSession(
+        replyMessageId,
+      );
 
-    if (mappedSessionId && validSessionId(mappedSessionId)) {
+    if (
+      mappedSessionId &&
+      validSessionId(mappedSessionId)
+    ) {
       return {
         sessionId: mappedSessionId,
-        source: "message_mapping",
+        source: "telegram_reply_mapping",
       };
     }
-  } catch (error) {
-    console.error("[inji] message mapping lookup failed", error);
+
+    // --------------------------------------------------------
+    // METHOD 2
+    // Try finding Session ID in replied Telegram text
+    // --------------------------------------------------------
+
+    const repliedText = [
+      message.reply_to_message?.text || "",
+      message.reply_to_message?.caption || "",
+    ].join("\n");
+
+    const sessionMatch =
+      repliedText.match(
+        /session-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i,
+      );
+
+    if (
+      sessionMatch &&
+      validSessionId(sessionMatch[0])
+    ) {
+      return {
+        sessionId: sessionMatch[0],
+        source: "telegram_reply_text",
+      };
+    }
   }
 
-  // ------------------------------------------------------------
-  // METHOD 2 + 3: Session ID inside text/caption
-  // ------------------------------------------------------------
+  // ----------------------------------------------------------
+  // METHOD 3
+  // Active chat fallback
+  //
+  // This is the important fix for your current logs.
+  // ----------------------------------------------------------
 
-  const rawText = [
-    replyTo.text || "",
-    replyTo.caption || "",
-  ].join("\n");
+  const activeSessionId =
+    await getActiveChat(
+      telegramChatId,
+    );
 
-  /*
-   * Telegram may remove HTML tags such as <code>.
-   *
-   * Therefore we intentionally search for the UUID itself,
-   * not for the HTML markup.
-   */
-  const match = rawText.match(
-    /session-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i,
-  );
-
-  if (match && validSessionId(match[0])) {
+  if (
+    activeSessionId &&
+    validSessionId(activeSessionId)
+  ) {
     return {
-      sessionId: match[0],
-      source: "message_text",
+      sessionId: activeSessionId,
+      source: "active_chat_fallback",
     };
   }
 
@@ -130,17 +185,28 @@ async function resolveSessionFromReply(
   };
 }
 
+// ============================================================
+// Main webhook handler
+// ============================================================
+
 export default async function handler(
   request: ApiRequest,
   response: ApiResponse,
 ) {
+  // ----------------------------------------------------------
+  // Method
+  // ----------------------------------------------------------
+
   if (request.method !== "POST") {
-    return methodNotAllowed(response, ["POST"]);
+    return methodNotAllowed(
+      response,
+      ["POST"],
+    );
   }
 
-  // ------------------------------------------------------------
-  // Telegram configuration
-  // ------------------------------------------------------------
+  // ----------------------------------------------------------
+  // Telegram config
+  // ----------------------------------------------------------
 
   let telegram;
 
@@ -155,17 +221,21 @@ export default async function handler(
       });
   }
 
-  // ------------------------------------------------------------
-  // Verify Telegram webhook secret
-  // ------------------------------------------------------------
+  // ----------------------------------------------------------
+  // Verify Telegram secret
+  // ----------------------------------------------------------
 
   const secret = headerValue(
     request,
     "x-telegram-bot-api-secret-token",
   );
 
-  if (secret !== telegram.webhookSecret) {
-    console.warn("[inji] telegram webhook unauthorized");
+  if (
+    secret !== telegram.webhookSecret
+  ) {
+    console.warn(
+      "[inji] telegram webhook unauthorized",
+    );
 
     return response
       .status(401)
@@ -175,15 +245,14 @@ export default async function handler(
       });
   }
 
-  // ------------------------------------------------------------
-  // Parse Telegram update
-  // ------------------------------------------------------------
+  // ----------------------------------------------------------
+  // Parse update
+  // ----------------------------------------------------------
 
-  const update = bodyObject(request) as TelegramUpdate | null;
+  const update =
+    bodyObject(request) as TelegramUpdate | null;
 
   if (!update) {
-    console.warn("[inji] telegram webhook invalid update");
-
     return response
       .status(400)
       .json({
@@ -193,89 +262,156 @@ export default async function handler(
   }
 
   try {
-    // ----------------------------------------------------------
-    // Deduplicate Telegram updates
-    // ----------------------------------------------------------
+    // ========================================================
+    // Prevent duplicate Telegram updates
+    // ========================================================
 
-    if (typeof update.update_id === "number") {
-      const claimed = await claimTelegramUpdate(update.update_id);
+    if (
+      typeof update.update_id ===
+      "number"
+    ) {
+      const claimed =
+        await claimTelegramUpdate(
+          update.update_id,
+        );
 
       if (!claimed) {
-        console.info("[inji] duplicate telegram update ignored", {
-          updateId: update.update_id,
-        });
+        console.info(
+          "[inji] duplicate telegram update ignored",
+          {
+            updateId: update.update_id,
+          },
+        );
 
-        return response.json({ ok: true });
+        return response.json({
+          ok: true,
+        });
       }
     }
 
-    // ==========================================================
-    // CALLBACK BUTTONS
-    // ==========================================================
+    // ========================================================
+    // CALLBACK QUERY
+    // Take Chat / Typing / Stop Typing / Close
+    // ========================================================
 
-    const callback = update.callback_query;
+    const callback =
+      update.callback_query;
 
     if (callback) {
-      console.info("[inji] telegram callback received", {
-        callbackId: callback.id,
-        data: callback.data,
-        fromId: callback.from?.id,
-        configuredChatId: telegram.chatId,
-        messageId: callback.message?.message_id,
-      });
-
-      if (
-        String(callback.from?.id) !== String(telegram.chatId) ||
-        typeof callback.message?.message_id !== "number"
-      ) {
-        console.warn("[inji] telegram callback rejected", {
+      console.info(
+        "[inji] telegram callback received",
+        {
+          callbackId: callback.id,
+          data: callback.data,
           fromId: callback.from?.id,
           configuredChatId: telegram.chatId,
-          messageId: callback.message?.message_id,
-        });
+          messageId:
+            callback.message?.message_id,
+        },
+      );
 
-        return response.json({ ok: true });
+      // Only the configured admin Telegram chat
+      // can control the conversation.
+
+      if (
+        String(callback.from?.id) !==
+          String(telegram.chatId) ||
+        typeof callback.message?.message_id !==
+          "number"
+      ) {
+        console.warn(
+          "[inji] telegram callback rejected",
+          {
+            fromId: callback.from?.id,
+            configuredChatId:
+              telegram.chatId,
+            messageId:
+              callback.message?.message_id,
+          },
+        );
+
+        return response.json({
+          ok: true,
+        });
       }
 
-      const sessionId = await getTelegramMessageSession(
-        callback.message.message_id,
-      );
+      // ------------------------------------------------------
+      // Find session associated with the button message
+      // ------------------------------------------------------
+
+      const sessionId =
+        await getTelegramMessageSession(
+          callback.message.message_id,
+        );
 
       const session = sessionId
         ? await getSession(sessionId)
         : null;
 
-      if (!session || session.status === "expired") {
-        console.warn("[inji] callback session missing", {
-          sessionId,
-          data: callback.data,
-        });
+      if (
+        !session ||
+        session.status === "expired"
+      ) {
+        console.warn(
+          "[inji] callback session missing or expired",
+          {
+            sessionId,
+            data: callback.data,
+          },
+        );
 
-        return response.json({ ok: true });
+        return response.json({
+          ok: true,
+        });
       }
 
       const data = callback.data;
 
-      // --------------------------------------------------------
+      // ======================================================
       // TAKE CHAT
-      // --------------------------------------------------------
+      // ======================================================
 
-      if (data === "take" && session.status !== "closed") {
+      if (
+        data === "take" &&
+        session.status !== "closed"
+      ) {
         session.status = "active";
-        session.agentName = agentDisplayName(callback.from);
+
+        session.agentName =
+          agentDisplayName(
+            callback.from,
+          );
+
         session.isTyping = false;
 
-        await saveSession(session);
+        await saveSession(
+          session,
+        );
 
-        console.info("[inji] chat taken", {
-          sessionId: session.sessionId,
-          agentName: session.agentName,
-        });
+        // THIS IS THE IMPORTANT PART:
+        //
+        // Remember which visitor this admin is currently
+        // chatting with.
+
+        await saveActiveChat(
+          String(telegram.chatId),
+          session.sessionId,
+        );
+
+        console.info(
+          "[inji] chat taken",
+          {
+            sessionId:
+              session.sessionId,
+            agentName:
+              session.agentName,
+          },
+        );
       }
 
-      // --------------------------------------------------------
+      // ======================================================
       // TYPING ON
-      // --------------------------------------------------------
+      // ======================================================
 
       if (
         data === "typing_on" &&
@@ -283,16 +419,22 @@ export default async function handler(
       ) {
         session.isTyping = true;
 
-        await saveSession(session);
+        await saveSession(
+          session,
+        );
 
-        console.info("[inji] typing enabled", {
-          sessionId: session.sessionId,
-        });
+        console.info(
+          "[inji] typing enabled",
+          {
+            sessionId:
+              session.sessionId,
+          },
+        );
       }
 
-      // --------------------------------------------------------
+      // ======================================================
       // TYPING OFF
-      // --------------------------------------------------------
+      // ======================================================
 
       if (
         data === "typing_off" &&
@@ -300,221 +442,342 @@ export default async function handler(
       ) {
         session.isTyping = false;
 
-        await saveSession(session);
+        await saveSession(
+          session,
+        );
 
-        console.info("[inji] typing disabled", {
-          sessionId: session.sessionId,
-        });
+        console.info(
+          "[inji] typing disabled",
+          {
+            sessionId:
+              session.sessionId,
+          },
+        );
       }
 
-      // --------------------------------------------------------
+      // ======================================================
       // CLOSE CHAT
-      // --------------------------------------------------------
+      // ======================================================
 
       if (
         data === "close" &&
         session.status !== "closed"
       ) {
         session.status = "closed";
+
         session.isTyping = false;
-        session.closedAt = Date.now();
 
-        await saveSession(session);
+        session.closedAt =
+          Date.now();
 
-        console.info("[inji] chat closed", {
-          sessionId: session.sessionId,
-        });
+        await saveSession(
+          session,
+        );
+
+        await deleteActiveChat(
+          String(telegram.chatId),
+        );
+
+        console.info(
+          "[inji] chat closed",
+          {
+            sessionId:
+              session.sessionId,
+          },
+        );
       }
 
-      // --------------------------------------------------------
-      // Telegram callback acknowledgement
-      // --------------------------------------------------------
+      // ------------------------------------------------------
+      // Answer Telegram callback
+      // ------------------------------------------------------
 
       if (callback.id) {
         await telegramRequest(
           telegram.token,
           "answerCallbackQuery",
           {
-            callback_query_id: callback.id,
+            callback_query_id:
+              callback.id,
           },
         );
       }
 
-      return response.json({ ok: true });
-    }
-
-    // ==========================================================
-    // HUMAN TELEGRAM MESSAGE
-    // ==========================================================
-
-    const message = update.message;
-
-    /*
-     * IMPORTANT:
-     *
-     * Do NOT silently discard the update anymore.
-     *
-     * Log the actual Telegram message structure first.
-     */
-
-    if (message) {
-      console.info("[inji] telegram message received", {
-        updateId: update.update_id,
-        messageId: message.message_id,
-        chatId: message.chat?.id,
-        configuredChatId: telegram.chatId,
-        chatType: message.chat?.type,
-        fromId: message.from?.id,
-        fromName: agentDisplayName(message.from),
-        text: message.text,
-        replyToMessageId:
-          message.reply_to_message?.message_id,
-        replyToText:
-          message.reply_to_message?.text,
-        replyToCaption:
-          message.reply_to_message?.caption,
+      return response.json({
+        ok: true,
       });
     }
 
-    // ----------------------------------------------------------
-    // Ignore messages that aren't usable human replies
-    // ----------------------------------------------------------
+    // ========================================================
+    // TELEGRAM MESSAGE
+    // ========================================================
+
+    const message =
+      update.message;
+
+    // --------------------------------------------------------
+    // No message
+    // --------------------------------------------------------
 
     if (!message) {
-      return response.json({ ok: true });
+      return response.json({
+        ok: true,
+      });
     }
 
-    if (typeof message.message_id !== "number") {
-      console.warn("[inji] telegram message missing message_id");
+    // --------------------------------------------------------
+    // DEBUG LOG
+    //
+    // This is deliberately before filtering so we can see
+    // exactly what Telegram sent.
+    // --------------------------------------------------------
 
-      return response.json({ ok: true });
+    console.info(
+      "[inji] telegram message received",
+      {
+        updateId:
+          update.update_id,
+
+        messageId:
+          message.message_id,
+
+        chatId:
+          message.chat?.id,
+
+        configuredChatId:
+          telegram.chatId,
+
+        chatType:
+          message.chat?.type,
+
+        fromId:
+          message.from?.id,
+
+        fromName:
+          agentDisplayName(
+            message.from,
+          ),
+
+        text:
+          message.text,
+
+        replyToMessageId:
+          message.reply_to_message
+            ?.message_id ?? null,
+
+        replyToText:
+          message.reply_to_message
+            ?.text ?? null,
+
+        replyToCaption:
+          message.reply_to_message
+            ?.caption ?? null,
+      },
+    );
+
+    // --------------------------------------------------------
+    // Validate message ID
+    // --------------------------------------------------------
+
+    if (
+      typeof message.message_id !==
+      "number"
+    ) {
+      console.warn(
+        "[inji] telegram message missing message_id",
+      );
+
+      return response.json({
+        ok: true,
+      });
     }
 
-    if (!message.text?.trim()) {
-      console.info("[inji] telegram message has no text");
+    // --------------------------------------------------------
+    // We only support text replies
+    // --------------------------------------------------------
 
-      return response.json({ ok: true });
+    if (
+      typeof message.text !== "string" ||
+      !message.text.trim()
+    ) {
+      console.info(
+        "[inji] telegram message has no text",
+        {
+          messageId:
+            message.message_id,
+        },
+      );
+
+      return response.json({
+        ok: true,
+      });
     }
 
-    // ----------------------------------------------------------
-    // SECURITY: only process messages from configured chat
-    // ----------------------------------------------------------
+    // --------------------------------------------------------
+    // SECURITY
+    //
+    // Ignore messages from other Telegram chats.
+    // --------------------------------------------------------
 
     if (
       String(message.chat?.id) !==
       String(telegram.chatId)
     ) {
-      console.warn("[inji] telegram message from wrong chat", {
-        messageChatId: message.chat?.id,
-        configuredChatId: telegram.chatId,
-      });
-
-      return response.json({ ok: true });
-    }
-
-    // ----------------------------------------------------------
-    // Native Telegram Reply is required
-    // ----------------------------------------------------------
-
-    if (
-      typeof message.reply_to_message?.message_id !==
-      "number"
-    ) {
-      console.info(
-        "[inji] telegram message is not a reply",
+      console.warn(
+        "[inji] telegram message from wrong chat",
         {
-          messageId: message.message_id,
+          messageChatId:
+            message.chat?.id,
+
+          configuredChatId:
+            telegram.chatId,
         },
       );
 
-      return response.json({ ok: true });
+      return response.json({
+        ok: true,
+      });
     }
 
-    // ----------------------------------------------------------
-    // Resolve the Formiva session
-    // ----------------------------------------------------------
+    // ========================================================
+    // RESOLVE CUSTOMER SESSION
+    // ========================================================
 
     const resolution =
-      await resolveSessionFromReply(
-        message.reply_to_message,
+      await resolveSession(
+        message,
+        String(telegram.chatId),
       );
 
-    console.info("[inji] telegram reply resolution", {
-      messageId: message.message_id,
-      replyToMessageId:
-        message.reply_to_message.message_id,
-      sessionId: resolution.sessionId,
-      source: resolution.source,
-    });
+    console.info(
+      "[inji] telegram reply resolved",
+      {
+        messageId:
+          message.message_id,
+
+        replyToMessageId:
+          message.reply_to_message
+            ?.message_id ?? null,
+
+        sessionId:
+          resolution.sessionId,
+
+        source:
+          resolution.source,
+      },
+    );
+
+    // --------------------------------------------------------
+    // No session
+    // --------------------------------------------------------
 
     if (!resolution.sessionId) {
       console.warn(
-        "[inji] could not resolve session from telegram reply",
-      );
-
-      return response.json({ ok: true });
-    }
-
-    // ----------------------------------------------------------
-    // Load session
-    // ----------------------------------------------------------
-
-    const session = await getSession(
-      resolution.sessionId,
-    );
-
-    if (!session) {
-      console.warn("[inji] telegram reply session missing", {
-        sessionId: resolution.sessionId,
-      });
-
-      return response.json({ ok: true });
-    }
-
-    if (session.status !== "active") {
-      console.warn(
-        "[inji] telegram reply session is not active",
+        "[inji] unable to resolve telegram message to a session",
         {
-          sessionId: session.sessionId,
-          status: session.status,
+          messageId:
+            message.message_id,
         },
       );
 
-      return response.json({ ok: true });
+      return response.json({
+        ok: true,
+      });
     }
 
-    // ----------------------------------------------------------
-    // Prevent duplicate human messages
-    // ----------------------------------------------------------
+    // ========================================================
+    // LOAD CUSTOMER SESSION
+    // ========================================================
+
+    const session =
+      await getSession(
+        resolution.sessionId,
+      );
+
+    if (!session) {
+      console.warn(
+        "[inji] resolved session does not exist",
+        {
+          sessionId:
+            resolution.sessionId,
+          messageId:
+            message.message_id,
+        },
+      );
+
+      return response.json({
+        ok: true,
+      });
+    }
+
+    // ========================================================
+    // MUST BE ACTIVE
+    // ========================================================
+
+    if (
+      session.status !== "active"
+    ) {
+      console.warn(
+        "[inji] resolved session is not active",
+        {
+          sessionId:
+            session.sessionId,
+
+          status:
+            session.status,
+
+          messageId:
+            message.message_id,
+        },
+      );
+
+      return response.json({
+        ok: true,
+      });
+    }
+
+    // ========================================================
+    // Prevent duplicate human replies
+    // ========================================================
 
     const humanMessageId =
       `telegram-${message.message_id}`;
 
     if (
       session.messages.some(
-        item => item.id === humanMessageId,
+        item =>
+          item.id ===
+          humanMessageId,
       )
     ) {
       console.info(
         "[inji] duplicate human reply ignored",
         {
-          sessionId: session.sessionId,
-          messageId: message.message_id,
+          sessionId:
+            session.sessionId,
+
+          messageId:
+            message.message_id,
         },
       );
 
-      return response.json({ ok: true });
+      return response.json({
+        ok: true,
+      });
     }
 
-    // ----------------------------------------------------------
+    // ========================================================
     // SAVE HUMAN MESSAGE
-    // ----------------------------------------------------------
+    // ========================================================
 
     const humanText =
-      message.text.trim().slice(0, 2000);
+      message.text
+        .trim()
+        .slice(0, 2000);
 
     const humanName =
-      agentDisplayName(message.from);
+      agentDisplayName(
+        message.from,
+      );
 
     session.messages.push({
       id: humanMessageId,
@@ -524,34 +787,54 @@ export default async function handler(
       senderName: humanName,
     });
 
+    // Preserve agent selected when Take Chat was clicked.
+
     session.agentName =
-      session.agentName || humanName;
+      session.agentName ||
+      humanName;
 
     session.isTyping = false;
 
-    await saveSession(session);
+    // Save updated customer session.
 
-    // ----------------------------------------------------------
-    // Map Telegram human reply message -> session
+    await saveSession(
+      session,
+    );
+
+    // Map the human's Telegram reply to this session too.
     //
-    // This allows the visitor to reply to the human response
-    // later and keeps the conversation chain alive.
-    // ----------------------------------------------------------
+    // This keeps the conversation mapping available if later
+    // Telegram messages are replied to.
 
     await saveTelegramMessage(
       session.sessionId,
       message.message_id,
     );
 
-    console.info("[inji] HUMAN REPLY SAVED SUCCESSFULLY", {
-      sessionId: session.sessionId,
-      messageId: message.message_id,
-      replyToMessageId:
-        message.reply_to_message.message_id,
-      agentName: humanName,
-    });
+    console.info(
+      "[inji] HUMAN REPLY SAVED SUCCESSFULLY",
+      {
+        sessionId:
+          session.sessionId,
 
-    return response.json({ ok: true });
+        messageId:
+          message.message_id,
+
+        replyToMessageId:
+          message.reply_to_message
+            ?.message_id ?? null,
+
+        source:
+          resolution.source,
+
+        agentName:
+          humanName,
+      },
+    );
+
+    return response.json({
+      ok: true,
+    });
 
   } catch (error) {
     console.error(
