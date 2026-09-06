@@ -1,4 +1,4 @@
-/* Team Inbox viewport: the header and composer stay locked while only the message/list areas scroll. */
+/* Locked layout: page/header/chat header/composer stay fixed; only lists and messages scroll. */
 .team-inbox-page {
   position: fixed;
   inset: 0;
@@ -24,7 +24,7 @@
   gap: 16px;
   padding: 14px 22px;
   border-bottom: 1px solid rgba(23,25,20,.12);
-  background: rgba(248,249,244,.96);
+  background: rgba(248,249,244,.98);
   box-shadow: 0 8px 24px rgba(23,25,20,.05);
   backdrop-filter: blur(12px);
 }
@@ -79,7 +79,7 @@
   gap: 18px;
   padding: 14px 24px;
   border-bottom: 1px solid rgba(23,25,20,.1);
-  background: rgba(238,240,232,.97);
+  background: rgba(238,240,232,.98);
   box-shadow: 0 6px 18px rgba(23,25,20,.04);
 }
 
@@ -102,7 +102,7 @@
   gap: 12px;
   padding: 14px 18px;
   border-top: 1px solid rgba(23,25,20,.11);
-  background: rgba(248,249,244,.98);
+  background: rgba(248,249,244,.99);
   box-shadow: 0 -8px 24px rgba(23,25,20,.045);
 }
 
@@ -127,9 +127,11 @@
   .team-inbox-layout {
     grid-template-columns: 300px minmax(0, 1fr);
   }
+
   .team-inbox-header {
     padding: 12px 16px;
   }
+
   .team-chat-body {
     padding: 20px 18px 24px;
   }
@@ -139,19 +141,24 @@
   .team-inbox-layout {
     grid-template-columns: 1fr;
   }
+
   .team-conversation-list {
     display: none;
   }
+
   .team-inbox-header {
     min-height: 64px;
   }
+
   .team-chat-head {
     min-height: 76px;
     padding: 12px 14px;
   }
+
   .team-chat-body {
     padding: 16px 12px 20px;
   }
+
   .team-composer {
     min-height: 76px;
     padding: 10px;

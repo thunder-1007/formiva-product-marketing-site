@@ -34,6 +34,7 @@ export type HandoffSession = {
 
 const TTL = 24 * 60 * 60;
 const TTL_MS = TTL * 1000;
+const LOCK_TTL_MS = 5000;
 
 function config() {
   const url = process.env.UPSTASH_REDIS_REST_URL?.replace(/\/$/, "");
@@ -58,6 +59,9 @@ const messageKey = (id: number) => `formiva:inji:telegram-message:${id}`;
 const updateKey = (id: number) => `formiva:inji:telegram-update:${id}`;
 const activeChatKey = (chatId: string) => `formiva:inji:active-chat:${chatId}`;
 const sessionsIndexKey = "formiva:inji:sessions:index";
+const sessionLockKey = (id: string) => `formiva:inji:session-lock:${id}`;
+const agentTypingKey = (id: string) => `formiva:inji:typing:agent:${id}`;
+const customerTypingKey = (id: string) => `formiva:inji:typing:customer:${id}`;
 
 export const isExpired = (session: HandoffSession) => Date.now() >= session.expiresAt;
 
@@ -76,6 +80,47 @@ export const normalizeTyping = (session: HandoffSession): HandoffSession => {
   return next;
 };
 
+async function sleep(ms: number) {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function acquireSessionLock(sessionId: string) {
+  const token = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const key = sessionLockKey(sessionId);
+
+  for (let attempt = 0; attempt < 24; attempt += 1) {
+    const result = await redisCommand<string | null>([
+      "SET",
+      key,
+      token,
+      "NX",
+      "PX",
+      String(LOCK_TTL_MS),
+    ]);
+    if (result === "OK") {
+      return async () => {
+        try {
+          await redisCommand(["DEL", key]);
+        } catch {
+          // Best effort; the lock also expires automatically.
+        }
+      };
+    }
+    await sleep(40 + attempt * 15);
+  }
+
+  throw new Error("session_busy");
+}
+
+async function withSessionLock<T>(sessionId: string, task: () => Promise<T>): Promise<T> {
+  const release = await acquireSessionLock(sessionId);
+  try {
+    return await task();
+  } finally {
+    await release();
+  }
+}
+
 export async function saveSession(session: HandoffSession) {
   session.updatedAt = Date.now();
   const normalized = normalizeTyping(session);
@@ -84,12 +129,18 @@ export async function saveSession(session: HandoffSession) {
 }
 
 export async function getSession(id: string): Promise<HandoffSession | null> {
-  const value = await redisCommand<string | null>(["GET", sessionKey(id)]);
+  const [value, agentTypingState, customerTypingState] = await Promise.all([
+    redisCommand<string | null>(["GET", sessionKey(id)]),
+    redisCommand<string | null>(["GET", agentTypingKey(id)]),
+    redisCommand<string | null>(["GET", customerTypingKey(id)]),
+  ]);
+
   if (!value) return null;
-  const session = JSON.parse(value) as HandoffSession;
-  if (isExpired(session)) {
+
+  const raw = JSON.parse(value) as HandoffSession;
+  if (isExpired(raw)) {
     return {
-      ...session,
+      ...raw,
       status: "expired",
       isTyping: false,
       typingUntil: undefined,
@@ -97,11 +148,38 @@ export async function getSession(id: string): Promise<HandoffSession | null> {
       customerTypingUntil: undefined,
     };
   }
-  return normalizeTyping(session);
+
+  let session = normalizeTyping(raw);
+
+  if (agentTypingState !== null) {
+    const active = agentTypingState === "1";
+    session = {
+      ...session,
+      isTyping: active,
+      typingUntil: active ? Date.now() + 2500 : undefined,
+    };
+  }
+
+  if (customerTypingState !== null) {
+    const active = customerTypingState === "1";
+    session = {
+      ...session,
+      customerTyping: active,
+      customerTypingUntil: active ? Date.now() + 2200 : undefined,
+    };
+  }
+
+  return session;
 }
 
 export async function deleteSession(id: string) {
-  await redisCommand(["DEL", sessionKey(id)]);
+  await redisCommand([
+    "DEL",
+    sessionKey(id),
+    sessionLockKey(id),
+    agentTypingKey(id),
+    customerTypingKey(id),
+  ]);
 }
 
 export async function listSessions(limit = 100): Promise<HandoffSession[]> {
@@ -111,30 +189,98 @@ export async function listSessions(limit = 100): Promise<HandoffSession[]> {
     "0",
     String(Math.max(0, limit - 1)),
   ]);
+
   if (!Array.isArray(ids) || ids.length === 0) return [];
 
   const sessions = await Promise.all(ids.map((id) => getSession(id)));
-  return sessions.filter((session): session is HandoffSession => Boolean(session));
+  return sessions
+    .filter((session): session is HandoffSession => Boolean(session))
+    .sort((a, b) => b.updatedAt - a.updatedAt);
+}
+
+export async function mutateSession(
+  sessionId: string,
+  updater: (session: HandoffSession) => void | Promise<void>,
+): Promise<HandoffSession | null> {
+  return withSessionLock(sessionId, async () => {
+    const session = await getSession(sessionId);
+    if (!session) return null;
+    await updater(session);
+    await saveSession(session);
+    return session;
+  });
+}
+
+type AppendOptions = {
+  clearAgentTyping?: boolean;
+  clearCustomerTyping?: boolean;
+  setAgentName?: string;
+};
+
+export async function appendSessionMessage(
+  sessionId: string,
+  message: SessionMessage,
+  options: AppendOptions = {},
+): Promise<{ session: HandoffSession; added: boolean } | null> {
+  return withSessionLock(sessionId, async () => {
+    const session = await getSession(sessionId);
+    if (!session) return null;
+
+    if (session.messages.some((item) => item.id === message.id)) {
+      return { session, added: false };
+    }
+
+    session.messages.push(message);
+
+    if (options.setAgentName) {
+      session.agentName = options.setAgentName.slice(0, 80);
+    }
+
+    if (options.clearAgentTyping) {
+      session.isTyping = false;
+      session.typingUntil = undefined;
+      await redisCommand(["SET", agentTypingKey(sessionId), "0", "EX", "5"]);
+    }
+
+    if (options.clearCustomerTyping) {
+      session.customerTyping = false;
+      session.customerTypingUntil = undefined;
+      await redisCommand(["SET", customerTypingKey(sessionId), "0", "EX", "5"]);
+    }
+
+    await saveSession(session);
+    return { session, added: true };
+  });
 }
 
 export async function setSessionTyping(sessionId: string, isTyping: boolean, durationMs = 2500) {
   const session = await getSession(sessionId);
   if (!session || session.status !== "active") return null;
 
-  session.isTyping = isTyping;
-  session.typingUntil = isTyping ? Date.now() + durationMs : undefined;
-  await saveSession(session);
-  return session;
+  await redisCommand([
+    "SET",
+    agentTypingKey(sessionId),
+    isTyping ? "1" : "0",
+    "EX",
+    String(Math.max(5, Math.ceil(durationMs / 1000))),
+  ]);
+
+  return getSession(sessionId);
 }
 
 export async function setCustomerTyping(sessionId: string, isTyping: boolean, durationMs = 2200) {
   const session = await getSession(sessionId);
   if (!session || session.status !== "active") return null;
 
-  session.customerTyping = isTyping;
-  session.customerTypingUntil = isTyping ? Date.now() + durationMs : undefined;
-  await saveSession(session);
-  return session;
+  await redisCommand([
+    "SET",
+    customerTypingKey(sessionId),
+    isTyping ? "1" : "0",
+    "EX",
+    String(Math.max(5, Math.ceil(durationMs / 1000))),
+  ]);
+
+  return getSession(sessionId);
 }
 
 export async function allowHandoff(id: string) {
@@ -165,14 +311,21 @@ export async function deleteActiveChat(chatId: string) {
 }
 
 export async function claimTelegramUpdate(updateId: number) {
-  const result = await redisCommand<string | null>(["SET", updateKey(updateId), "1", "NX", "EX", String(TTL)]);
+  const result = await redisCommand<string | null>([
+    "SET",
+    updateKey(updateId),
+    "1",
+    "NX",
+    "EX",
+    String(TTL),
+  ]);
   return result === "OK";
 }
 
 export function newSession(
   sessionId: string,
   question: string,
-  details: Pick<HandoffSession, "visitorName" | "company" | "phone" | "email">
+  details: Pick<HandoffSession, "visitorName" | "company" | "phone" | "email">,
 ): HandoffSession {
   const now = Date.now();
   return {
