@@ -242,10 +242,18 @@
 .inji-feedback-form > button:disabled { cursor: wait; opacity: .6; }
 .inji-form-error { margin: 0; color: #a12e28; font-size: 11px; line-height: 1.35; }
 .inji-rating { display: flex; gap: 6px; }
-.inji-rating button { width: 34px; height: 34px; border: 1px solid rgba(16,17,15,.18); border-radius: 6px; color: var(--ink); background: #fff; font-weight: 800; cursor: pointer; }
+.inji-rating button { width: 42px; height: 42px; border: 1px solid rgba(16,17,15,.18); border-radius: 8px; color: var(--ink); background: #fff; font-size: 22px; line-height: 1; cursor: pointer; }
 .inji-rating button:hover,
 .inji-rating button.active { border-color: var(--ink); background: var(--lime); }
 .inji-agent-typing { align-self: flex-start; max-width: 100%; color: #6b756a; font: 10px 'DM Mono', monospace; letter-spacing: .04em; overflow-wrap: anywhere; }
+.inji-human-controls { align-self: stretch; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #6b756a; font: 10px 'DM Mono', monospace; letter-spacing: .04em; text-transform: uppercase; }
+.inji-human-controls button,
+.inji-text-button { border: 0; color: #6844e5; background: transparent; font: 800 11px inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.inji-human-controls button:disabled { cursor: wait; opacity: .6; }
+.inji-text-button { justify-self: center; padding: 2px; }
+.inji-human-controls button:focus-visible,
+.inji-text-button:focus-visible,
+.inji-rating button:focus-visible { outline: 3px solid rgba(109,67,233,.35); outline-offset: 2px; }
 
 .inji-button:hover {
   transform: translateY(-3px);
